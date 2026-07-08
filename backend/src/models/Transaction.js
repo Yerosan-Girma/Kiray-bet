@@ -48,6 +48,6 @@ const transactionSchema = new mongoose.Schema(
 );
 
 transactionSchema.index({ userId: 1, status: 1 });
-transactionSchema.index({ reference: 1 });
+
 
 module.exports = mongoose.model('Transaction', transactionSchema);

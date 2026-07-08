@@ -1,20 +1,32 @@
-require('dotenv').config();
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '../.env') });
+const http = require('http');
+
 const app = require('./app');
 const connectDB = require('./config/database');
+const { initSocket } = require('./config/socket');
 const logger = require('./utils/logger');
 
 const PORT = process.env.PORT || 5000;
 
-// Connect to Database
+
+const server = http.createServer(app);
+
+// Connect to MongoDB
 connectDB();
 
-const server = app.listen(PORT, () => {
-  logger.info(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
+// Initialize Socket.IO
+initSocket(server);
+
+server.listen(PORT, () => {
+  logger.info(`Server running on port ${PORT}`);
 });
 
-// Handle unhandled promise rejections
-process.on('unhandledRejection', (err, promise) => {
-  logger.error(`Error: ${err.message}`);
-  // Close server & exit process
-  server.close(() => process.exit(1));
+// Graceful shutdown
+process.on('SIGTERM', () => {
+  logger.info('SIGTERM received, shutting down gracefully');
+  server.close(() => {
+    logger.info('Process terminated');
+    process.exit(0);
+  });
 });
