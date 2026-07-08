@@ -1,0 +1,114 @@
+const { Server } = require('socket.io');
+const jwt = require('jsonwebtoken');
+const User = require('../models/User');
+const Inquiry = require('../models/Inquiry');
+const logger = require('../utils/logger');
+
+let io;
+
+const initSocket = (server) => {
+  io = new Server(server, {
+    cors: {
+      origin: process.env.CLIENT_URL,
+      credentials: true,
+    },
+  });
+
+  io.use(async (socket, next) => {
+    try {
+      const token = socket.handshake.auth.token;
+      if (!token) return next(new Error('Authentication error'));
+
+      const decoded = jwt.verify(token, process.env.JWT_ACCESS_SECRET);
+      const user = await User.findById(decoded.id).select('-password -refreshToken');
+      if (!user) return next(new Error('User not found'));
+
+      socket.user = user;
+      next();
+    } catch (err) {
+      next(new Error('Invalid token'));
+    }
+  });
+
+  io.on('connection', (socket) => {
+    logger.info(`User ${socket.user.email} connected`);
+
+    // Join a room based on inquiry ID
+    socket.on('join-inquiry', (inquiryId) => {
+      socket.join(`inquiry_${inquiryId}`);
+      logger.info(`User ${socket.user.email} joined inquiry ${inquiryId}`);
+    });
+
+    // Leave room
+    socket.on('leave-inquiry', (inquiryId) => {
+      socket.leave(`inquiry_${inquiryId}`);
+    });
+
+    // Send message
+    socket.on('send-message', async ({ inquiryId, message }) => {
+      try {
+        const inquiry = await Inquiry.findById(inquiryId);
+        if (!inquiry) throw new Error('Inquiry not found');
+
+        // Check if user is participant (renter or owner/broker)
+        const isRenter = inquiry.userId.toString() === socket.user.id;
+        const isOwner = inquiry.houseId.listedBy.toString() === socket.user.id;
+        // For simplicity, we assume broker is also listedBy? Actually listedBy can be owner or broker.
+        // We'll check if user is the listedBy or the renter
+        const house = await House.findById(inquiry.houseId);
+        const isListedBy = house.listedBy.toString() === socket.user.id;
+
+        if (!isRenter && !isListedBy) {
+          socket.emit('error', { message: 'Not authorized to reply to this inquiry' });
+          return;
+        }
+
+        const reply = {
+          userId: socket.user.id,
+          message,
+          createdAt: new Date(),
+        };
+        inquiry.replies.push(reply);
+        inquiry.status = 'active';
+        await inquiry.save();
+
+        // Emit to all participants in the room
+        io.to(`inquiry_${inquiryId}`).emit('new-message', {
+          inquiryId,
+          reply,
+          sender: {
+            id: socket.user.id,
+            name: socket.user.name,
+            role: socket.user.role,
+          },
+        });
+
+        // Send notification to other participants (omitted for brevity)
+
+      } catch (error) {
+        socket.emit('error', { message: error.message });
+      }
+    });
+
+    // Typing indicator
+    socket.on('typing', ({ inquiryId, isTyping }) => {
+      socket.to(`inquiry_${inquiryId}`).emit('user-typing', {
+        userId: socket.user.id,
+        isTyping,
+      });
+    });
+
+    socket.on('disconnect', () => {
+      logger.info(`User ${socket.user.email} disconnected`);
+    });
+  });
+
+  return io;
+};
+
+const getIO = () => {
+  if (!io) throw new Error('Socket.io not initialized');
+  return io;
+};
+
+module.exports = { initSocket, getIO };
