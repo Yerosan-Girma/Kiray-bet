@@ -28,6 +28,11 @@ exports.banUser = catchAsync(async (req, res) => {
   res.json({ success: true, data: user });
 });
 
+exports.restoreUser = catchAsync(async (req, res) => {
+  const user = await adminService.restoreUser(req.user.id, req.params.id);
+  res.json({ success: true, data: user });
+});
+
 exports.getListings = catchAsync(async (req, res) => {
   const { page = 1, limit = 10, ...filters } = req.query;
   const result = await adminService.getListings(filters, parseInt(page), parseInt(limit));

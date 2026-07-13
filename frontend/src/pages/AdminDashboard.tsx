@@ -2,13 +2,14 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Users, Home, DollarSign, TrendingUp, CheckCircle, XCircle,
-  Shield, Clock, Trash2, Eye, Ban, RefreshCw, Search, Filter,
+  Shield, Clock, Trash2, Ban, Search, Briefcase,
 } from 'lucide-react';
 import { adminService } from '../services/admin.service';
+import { brokerService } from '../services/broker.service';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'sonner';
 
-type AdminTab = 'dashboard' | 'users' | 'listings' | 'transactions' | 'auditlogs';
+type AdminTab = 'dashboard' | 'users' | 'brokers' | 'listings' | 'transactions' | 'auditlogs';
 
 function StatCard({ label, value, icon: Icon, color }: any) {
   return (
@@ -67,6 +68,30 @@ export default function AdminDashboard() {
     staleTime: 30_000,
   });
 
+  // Broker applications
+  const [brokerPage, setBrokerPage] = useState(1);
+  const [brokerStatus, setBrokerStatus] = useState('pending');
+
+  const { data: brokerAppsData, isLoading: brokerLoading } = useQuery({
+    queryKey: ['brokerApplications', brokerPage, brokerStatus],
+    queryFn: () => brokerService.getBrokerApplications({ page: brokerPage, limit: 15, status: brokerStatus || undefined }),
+    enabled: tab === 'brokers',
+    staleTime: 30_000,
+  });
+
+  const approveBroker = useMutation({
+    mutationFn: (userId: string) => brokerService.approveBrokerApplication(userId),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['brokerApplications'] }); toast.success('Broker approved!'); },
+    onError: (e: any) => toast.error(e.response?.data?.message || 'Failed'),
+  });
+
+  const rejectBroker = useMutation({
+    mutationFn: ({ userId, reason }: { userId: string; reason: string }) =>
+      brokerService.rejectBrokerApplication(userId, reason),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['brokerApplications'] }); toast.success('Broker rejected'); },
+    onError: (e: any) => toast.error(e.response?.data?.message || 'Failed'),
+  });
+
   // Mutations
   const approveUser = useMutation({
     mutationFn: (id: string) => adminService.approveUser(id),
@@ -101,9 +126,13 @@ export default function AdminDashboard() {
   const transactions = txData?.data || [];
   const auditLogs = auditData?.data || [];
 
+  const brokerApps: any[] = brokerAppsData?.data || [];
+  const brokerAppPagination = brokerAppsData?.pagination;
+
   const TABS: { id: AdminTab; label: string; icon: any }[] = [
     { id: 'dashboard', label: 'Dashboard', icon: TrendingUp },
     { id: 'users', label: 'Users', icon: Users },
+    { id: 'brokers', label: 'Broker Apps', icon: Briefcase },
     { id: 'listings', label: 'Listings', icon: Home },
     { id: 'transactions', label: 'Transactions', icon: DollarSign },
     { id: 'auditlogs', label: 'Audit Logs', icon: Shield },
@@ -139,7 +168,7 @@ export default function AdminDashboard() {
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
               <StatCard label="Total Users" value={stats?.totalUsers || 0} icon={Users} color="bg-blue-50 text-blue-600" />
               <StatCard label="Total Listings" value={stats?.totalListings || 0} icon={Home} color="bg-amber-50 text-amber-600" />
-              <StatCard label="Revenue (KSh)" value={stats?.totalRevenue || 0} icon={DollarSign} color="bg-green-50 text-green-600" />
+              <StatCard label="Revenue (ETB)" value={stats?.totalRevenue || 0} icon={DollarSign} color="bg-green-50 text-green-600" />
               <StatCard label="Pending Approvals" value={(stats?.pendingListings || 0) + (stats?.pendingUsers || 0)} icon={Clock} color="bg-orange-50 text-orange-600" />
             </div>
           </div>
@@ -263,7 +292,7 @@ export default function AdminDashboard() {
                           <p className="font-semibold text-foreground truncate max-w-48">{l.title}</p>
                           <p className="text-xs text-muted-foreground">{l.location}</p>
                         </td>
-                        <td className="px-6 py-4 font-semibold">KSh {l.price?.toLocaleString()}</td>
+                        <td className="px-6 py-4 font-semibold">ETB {l.price?.toLocaleString()}</td>
                         <td className="px-6 py-4">
                           <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
                             l.status === 'approved' ? 'bg-green-100 text-green-700' :
@@ -310,6 +339,94 @@ export default function AdminDashboard() {
           </div>
         )}
 
+        {/* Broker Applications */}
+        {tab === 'brokers' && (
+          <div className="bg-white rounded-3xl border border-border shadow-sm overflow-hidden">
+            <div className="p-5 border-b border-border flex items-center gap-4">
+              <select value={brokerStatus} onChange={(e) => { setBrokerStatus(e.target.value); setBrokerPage(1); }}
+                className="px-4 py-2.5 border border-border rounded-xl text-sm focus:outline-none focus:border-amber-500 bg-background">
+                <option value="">All Status</option>
+                <option value="pending">Pending</option>
+                <option value="approved">Approved</option>
+                <option value="rejected">Rejected</option>
+              </select>
+            </div>
+            {brokerLoading ? (
+              <div className="p-8 text-center"><div className="w-8 h-8 border-4 border-amber-500 border-t-transparent rounded-full animate-spin mx-auto" /></div>
+            ) : brokerApps.length === 0 ? (
+              <div className="p-12 text-center">
+                <Briefcase className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                <p className="font-bold text-foreground mb-2">No broker applications</p>
+              </div>
+            ) : (
+              <div className="divide-y divide-border">
+                {brokerApps.map((app: any) => {
+                  const tx = app.brokerRegistrationTxId;
+                  return (
+                    <div key={app._id} className="p-6 hover:bg-muted/10 transition-colors">
+                      <div className="flex items-start justify-between gap-4 flex-wrap">
+                        <div className="flex items-start gap-4">
+                          <div className="w-12 h-12 rounded-2xl bg-amber-100 flex items-center justify-center shrink-0">
+                            <span className="font-bold text-amber-700 text-lg">{app.name?.[0]}</span>
+                          </div>
+                          <div>
+                            <p className="font-bold text-foreground">{app.name}</p>
+                            <p className="text-xs text-muted-foreground">{app.email}</p>
+                            {app.brokerCompanyName && <p className="text-xs text-muted-foreground mt-0.5">{app.brokerCompanyName}</p>}
+                            {app.brokerOfficeAddress && <p className="text-xs text-muted-foreground">{app.brokerOfficeAddress}</p>}
+                            {app.brokerYearsExperience > 0 && <p className="text-xs text-amber-600">{app.brokerYearsExperience} years experience</p>}
+                            {app.brokerDescription && (
+                              <p className="text-xs text-muted-foreground mt-2 max-w-md line-clamp-2">{app.brokerDescription}</p>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="flex flex-col items-end gap-2">
+                          <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${
+                            app.brokerApplicationStatus === 'pending' ? 'bg-yellow-100 text-yellow-700' :
+                            app.brokerApplicationStatus === 'approved' ? 'bg-green-100 text-green-700' :
+                            'bg-red-100 text-red-700'
+                          }`}>{app.brokerApplicationStatus}</span>
+
+                          {tx && (
+                            <div className="text-right">
+                              <p className="text-xs text-muted-foreground">Payment: <span className="font-semibold text-foreground">ETB {tx.amount}</span></p>
+                              <p className="text-xs text-green-600 font-semibold capitalize">{tx.status} · {tx.paymentMethod}</p>
+                            </div>
+                          )}
+
+                          {app.brokerApplicationStatus === 'pending' && (
+                            <div className="flex gap-2">
+                              <button onClick={() => approveBroker.mutate(app._id)} disabled={approveBroker.isPending}
+                                className="px-3 py-1.5 rounded-lg bg-green-50 text-green-700 hover:bg-green-100 text-xs font-semibold transition-colors">
+                                Approve
+                              </button>
+                              <button onClick={() => {
+                                const reason = prompt('Rejection reason:') || 'Does not meet requirements';
+                                rejectBroker.mutate({ userId: app._id, reason });
+                              }} disabled={rejectBroker.isPending}
+                                className="px-3 py-1.5 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 text-xs font-semibold transition-colors">
+                                Reject
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+            {brokerAppPagination && brokerAppPagination.pages > 1 && (
+              <div className="flex items-center justify-center gap-2 p-4 border-t border-border">
+                <button disabled={brokerPage === 1} onClick={() => setBrokerPage((p) => p - 1)} className="px-4 py-2 rounded-xl border text-sm disabled:opacity-40">Previous</button>
+                <span className="text-sm text-muted-foreground">Page {brokerPage} of {brokerAppPagination.pages}</span>
+                <button disabled={brokerPage === brokerAppPagination.pages} onClick={() => setBrokerPage((p) => p + 1)} className="px-4 py-2 rounded-xl border text-sm disabled:opacity-40">Next</button>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Transactions */}
         {tab === 'transactions' && (
           <div className="bg-white rounded-3xl border border-border shadow-sm overflow-hidden">
@@ -329,7 +446,7 @@ export default function AdminDashboard() {
                   {transactions.map((tx: any) => (
                     <tr key={tx._id} className="border-b border-border hover:bg-muted/20">
                       <td className="px-6 py-4 font-mono text-xs text-muted-foreground">{tx.reference}</td>
-                      <td className="px-6 py-4 font-semibold">KSh {tx.amount?.toLocaleString()}</td>
+                      <td className="px-6 py-4 font-semibold">ETB {tx.amount?.toLocaleString()}</td>
                       <td className="px-6 py-4 capitalize text-muted-foreground">{tx.paymentMethod}</td>
                       <td className="px-6 py-4">
                         <span className={`px-2 py-1 rounded-full text-xs font-semibold ${

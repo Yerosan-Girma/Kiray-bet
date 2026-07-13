@@ -47,7 +47,7 @@ const houseSchema = new mongoose.Schema(
     },
     propertyType: {
       type: String,
-      enum: ['apartment', 'house', 'condo', 'studio', 'villa', 'townhouse'],
+      enum: ['apartment', 'house', 'condo', 'studio', 'villa', 'townhouse', 'penthouse', 'beach house'],
       required: true,
     },
     amenities: {
@@ -95,6 +95,22 @@ const houseSchema = new mongoose.Schema(
     flagReason: {
       type: String,
       default: '',
+    },
+    // Owner → Broker submission fields
+    assignedBroker: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      default: null,
+    },
+    ownerId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      default: null,
+    },
+    brokerSubmissionStatus: {
+      type: String,
+      enum: ['none', 'pending_broker', 'accepted', 'rejected'],
+      default: 'none',
     },
   },
   {

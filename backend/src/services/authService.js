@@ -68,12 +68,17 @@ const register = async (userData) => {
 
   return {
     user: {
+      _id: user._id,
       id: user._id,
       name: user.name,
       email: user.email,
+      phone: user.phone || '',
       role: user.role,
       isApproved: user.isApproved,
       isPremium: user.isPremium,
+      status: user.status,
+      profileImage: user.profileImage || '',
+      brokerApplicationStatus: user.brokerApplicationStatus || 'none',
     },
     accessToken,
     refreshToken,
@@ -114,12 +119,17 @@ const login = async (email, password) => {
 
   return {
     user: {
+      _id: user._id,
       id: user._id,
       name: user.name,
       email: user.email,
+      phone: user.phone || '',
       role: user.role,
       isApproved: user.isApproved,
       isPremium: user.isPremium,
+      status: user.status,
+      profileImage: user.profileImage || '',
+      brokerApplicationStatus: user.brokerApplicationStatus || 'none',
     },
     accessToken,
     refreshToken,

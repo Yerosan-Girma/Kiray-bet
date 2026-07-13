@@ -12,6 +12,7 @@ router.get('/users', adminController.getUsers);
 router.put('/users/:id/approve', adminController.approveUser);
 router.put('/users/:id/suspend', adminController.suspendUser);
 router.put('/users/:id/ban', adminController.banUser);
+router.put('/users/:id/restore', adminController.restoreUser);
 
 router.get('/listings', adminController.getListings);
 router.put('/listings/:id/approve', adminController.approveListing);

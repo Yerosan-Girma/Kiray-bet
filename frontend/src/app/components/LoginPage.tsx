@@ -20,12 +20,26 @@ export function LoginPage() {
     setLoading(true);
     try {
       const response = await authService.login({ email, password });
-      console.log('Login response:', response);
-      login(response.data.user, response.data.accessToken, rememberMe);
+      const userData = response.data.user;
+      // Normalize: backend login returns `id`, getProfile returns `_id` — unify both
+      const normalizedUser = { ...userData, _id: userData._id || userData.id };
+      login(normalizedUser, response.data.accessToken, rememberMe);
       toast.success('Login successful!');
-      if (response.data.user.role !== 'renter') {
-        navigate(`/${response.data.user.role}`);
+
+      const role = normalizedUser.role;
+      if (role === 'admin') {
+        navigate('/admin');
+      } else if (role === 'owner') {
+        navigate('/owner');
+      } else if (role === 'broker') {
+        // Approved brokers go to dashboard, unapproved go to pending
+        if (normalizedUser.isApproved) {
+          navigate('/broker');
+        } else {
+          navigate('/broker/pending');
+        }
       } else {
+        // renter
         navigate('/');
       }
     } catch (error: any) {

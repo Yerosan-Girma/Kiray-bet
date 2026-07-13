@@ -23,6 +23,9 @@ const FavoritesPage = lazy(() => import('../pages/FavoritesPage'));
 const InquiriesPage = lazy(() => import('../pages/InquiriesPage'));
 const ProfilePage = lazy(() => import('../pages/ProfilePage'));
 const PremiumPage = lazy(() => import('../pages/PremiumPage'));
+const MessagesPage = lazy(() => import('../pages/MessagesPage'));
+const BrokerApplyPage = lazy(() => import('../pages/BrokerApplyPage'));
+const BrokerPendingPage = lazy(() => import('../pages/BrokerPendingPage'));
 const AdminDashboard = lazy(() => import('../pages/AdminDashboard'));
 const OwnerDashboard = lazy(() => import('../pages/OwnerDashboard'));
 const BrokerDashboard = lazy(() => import('../pages/BrokerDashboard'));
@@ -73,6 +76,10 @@ export default function App() {
                       <Route path="/profile" element={<ProfilePage />} />
                       <Route path="/favorites" element={<FavoritesPage />} />
                       <Route path="/inquiries" element={<InquiriesPage />} />
+                      <Route path="/messages" element={<MessagesPage />} />
+                      <Route path="/messages/:partnerId" element={<MessagesPage />} />
+                      <Route path="/broker/apply" element={<BrokerApplyPage />} />
+                      <Route path="/broker/pending" element={<BrokerPendingPage />} />
                     </Route>
 
                     {/* Role-based */}

@@ -76,7 +76,7 @@ export default function PropertyCard({ house, index }: PropertyCardProps) {
         {/* Price on image */}
         <div className="absolute bottom-4 left-4 text-white">
           <span className="text-xl font-black" style={{ fontFamily: "Urbanist, sans-serif" }}>
-            KSh {price.toLocaleString()}
+            ETB {price.toLocaleString()}
           </span>
           <span className="text-white/70 text-xs ml-1">{priceUnit}</span>
         </div>

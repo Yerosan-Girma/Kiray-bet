@@ -34,7 +34,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       try {
         const response = await authService.getProfile();
         // Backend: GET /auth/profile → { success, data: user }
-        setUser(response.data);
+        // Mongoose doc has _id; normalize id/\_id to always have _id
+        const userData = response.data;
+        setUser({ ...userData, _id: userData._id || userData.id });
       } catch {
         setUser(null);
         clearAuth();
@@ -47,10 +49,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const login = (userData: User, accessToken: string, rememberMe = false) => {
-    setUser(userData);
+    // Normalize id/_id from login response
+    const normalized = { ...userData, _id: (userData as any)._id || (userData as any).id };
+    setUser(normalized);
     const storage = rememberMe ? localStorage : sessionStorage;
     storage.setItem(STORAGE_KEYS.TOKEN, accessToken);
-    storage.setItem(STORAGE_KEYS.USER, JSON.stringify(userData));
+    storage.setItem(STORAGE_KEYS.USER, JSON.stringify(normalized));
   };
 
   const logout = async () => {

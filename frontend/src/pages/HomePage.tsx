@@ -22,11 +22,11 @@ const HERO_BG_2  = "1564013799919-ab600027ffc6";
 
 
 const LOCATIONS = [
-  { name:"Nairobi",  count:1240, image:"1611348586804-61bf6c080437" },
-  { name:"Mombasa",  count:382,  image:"1572804013309-59a88b7e92f1" },
-  { name:"Kisumu",   count:156,  image:"1565876427310-a8dbde24bb16" },
-  { name:"Nakuru",   count:98,   image:"1582719508461-905c673771fd" },
-  { name:"Eldoret",  count:74,   image:"1509909756405-be0199881695" },
+  { name:"Addis Ababa", count:1240, image:"1611348586804-61bf6c080437" },
+  { name:"Hawassa",     count:382,  image:"1572804013309-59a88b7e92f1" },
+  { name:"Bahir Dar",   count:156,  image:"1565876427310-a8dbde24bb16" },
+  { name:"Mekelle",     count:98,   image:"1582719508461-905c673771fd" },
+  { name:"Dire Dawa",   count:74,   image:"1509909756405-be0199881695" },
 ];
 
 const TESTIMONIALS = [
@@ -202,7 +202,7 @@ function Hero() {
 
             {/* Quick tags */}
             <div className="px-5 pb-4 flex flex-wrap gap-2">
-              {["🔥 Westlands","⭐ Karen","🌊 Nyali","🏙 Kilimani","🌿 Lavington"].map(tag => (
+              {["🔥 Bole","⭐ Kazanchis","🌊 Hawassa","🏙 Piassa","🌿 Megenagna"].map(tag => (
                 <button key={tag} className="text-xs px-3 py-1.5 rounded-full font-medium transition-all hover:scale-105"
                   style={{ background: "rgba(232,184,75,0.12)", color: "#E8B84B", border: "1px solid rgba(232,184,75,0.25)" }}>
                   {tag}

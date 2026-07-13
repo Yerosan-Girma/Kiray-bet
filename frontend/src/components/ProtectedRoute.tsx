@@ -16,15 +16,25 @@ export function ProtectedRoute({ allowedRoles }: ProtectedRouteProps) {
     );
   }
 
+  // Not logged in → go to login
   if (!user) {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/login" replace />;
   }
 
+  // Broker accessing /broker dashboard: must be approved
+  if (allowedRoles?.includes('broker') && user.role === 'broker' && !user.isApproved) {
+    return <Navigate to="/broker/pending" replace />;
+  }
+
+  // Wrong role for this route → redirect to their own dashboard
   if (allowedRoles && !allowedRoles.includes(user.role)) {
-    // If user has no permission, redirect to appropriate dashboard or home
     if (user.role === 'admin') return <Navigate to="/admin" replace />;
     if (user.role === 'owner') return <Navigate to="/owner" replace />;
-    if (user.role === 'broker') return <Navigate to="/broker" replace />;
+    if (user.role === 'broker') {
+      return user.isApproved
+        ? <Navigate to="/broker" replace />
+        : <Navigate to="/broker/pending" replace />;
+    }
     return <Navigate to="/" replace />;
   }
 

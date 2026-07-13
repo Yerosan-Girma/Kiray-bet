@@ -51,6 +51,8 @@ app.use('/api/inquiries', require('./routes/inquiryRoutes'));
 app.use('/api/notifications', require('./routes/notificationRoutes'));
 app.use('/api/payments', require('./routes/paymentRoutes'));
 app.use('/api/admin', require('./routes/adminRoutes'));
+app.use('/api/broker', require('./routes/brokerRoutes'));
+app.use('/api/messages', require('./routes/messageRoutes'));
 
 // Health check
 app.get('/health', (req, res) => res.status(200).json({ status: 'OK' }));

@@ -41,6 +41,12 @@ const transactionSchema = new mongoose.Schema(
       type: String,
       default: '',
     },
+    // Type distinguishes premium upgrade from broker registration fee
+    type: {
+      type: String,
+      enum: ['premium', 'broker_registration'],
+      default: 'premium',
+    },
   },
   {
     timestamps: true,

@@ -251,7 +251,7 @@ export default function PropertyDetailPage() {
               <div className="flex items-center gap-6 mt-4 flex-wrap">
                 <div>
                   <span className="text-3xl font-black text-foreground" style={{ fontFamily: 'Urbanist, sans-serif' }}>
-                    KSh {house.price.toLocaleString()}
+                    ETB {house.price.toLocaleString()}
                   </span>
                   <span className="text-muted-foreground text-sm ml-1">/month</span>
                 </div>

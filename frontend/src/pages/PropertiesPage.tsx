@@ -124,14 +124,14 @@ export default function PropertiesPage() {
               </select>
             </div>
             <div>
-              <label className="block text-xs font-semibold text-muted-foreground mb-1.5 uppercase tracking-wide">Min Price (KSh)</label>
+              <label className="block text-xs font-semibold text-muted-foreground mb-1.5 uppercase tracking-wide">Min Price (ETB)</label>
               <input type="number" placeholder="0"
                 value={filters.minPrice || ''}
                 onChange={(e) => updateFilter('minPrice', e.target.value ? Number(e.target.value) : undefined)}
                 className="w-full px-3 py-2 border border-border rounded-lg text-sm focus:outline-none focus:border-amber-500" />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-muted-foreground mb-1.5 uppercase tracking-wide">Max Price (KSh)</label>
+              <label className="block text-xs font-semibold text-muted-foreground mb-1.5 uppercase tracking-wide">Max Price (ETB)</label>
               <input type="number" placeholder="Any"
                 value={filters.maxPrice || ''}
                 onChange={(e) => updateFilter('maxPrice', e.target.value ? Number(e.target.value) : undefined)}

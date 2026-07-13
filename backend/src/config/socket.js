@@ -1,7 +1,9 @@
 const { Server } = require('socket.io');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const House = require('../models/House');
 const Inquiry = require('../models/Inquiry');
+const Message = require('../models/Message');
 const logger = require('../utils/logger');
 
 let io;
@@ -97,6 +99,54 @@ const initSocket = (server) => {
         isTyping,
       });
     });
+
+    // ── Private DM rooms (owner ↔ broker) ──────────────────────────────────
+    socket.on('join-dm', (conversationId) => {
+      socket.join(`dm_${conversationId}`);
+    });
+
+    socket.on('leave-dm', (conversationId) => {
+      socket.leave(`dm_${conversationId}`);
+    });
+
+    socket.on('send-dm', async ({ conversationId, receiverId, content, houseId }) => {
+      try {
+        const msg = await Message.create({
+          conversationId,
+          senderId: socket.user.id,
+          receiverId,
+          content,
+          houseId: houseId || null,
+        });
+
+        const populated = await msg.populate('senderId', 'name profileImage role');
+
+        io.to(`dm_${conversationId}`).emit('new-dm', populated);
+
+        // Notify receiver
+        const { createNotification } = require('../services/notificationService');
+        const notification = await createNotification(
+          receiverId,
+          'new_message',
+          `New message from ${socket.user.name}`,
+          { conversationId, senderId: socket.user.id }
+        );
+        io.to(`user_${receiverId}`).emit('notification', notification);
+      } catch (err) {
+        socket.emit('error', { message: err.message });
+      }
+    });
+
+    socket.on('dm-typing', ({ conversationId, isTyping }) => {
+      socket.to(`dm_${conversationId}`).emit('dm-user-typing', {
+        userId: socket.user.id,
+        name: socket.user.name,
+        isTyping,
+      });
+    });
+
+    // ── User personal room (for notifications) ─────────────────────────────
+    socket.join(`user_${socket.user.id}`);
 
     socket.on('disconnect', () => {
       logger.info(`User ${socket.user.email} disconnected`);

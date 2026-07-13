@@ -4,7 +4,10 @@ const Transaction = require('../models/Transaction');
 const AuditLog = require('../models/AuditLog');
 const Inquiry = require('../models/Inquiry');
 const Favorite = require('../models/Favorite');
+const Notification = require('../models/Notification');
 const { AppError } = require('../utils/AppError');
+const { getIO } = require('../config/socket');
+const { sendEmail } = require('./emailService');
 
 const getDashboardStats = async () => {
   const totalUsers = await User.countDocuments();
@@ -101,11 +104,43 @@ const suspendUser = async (adminId, userId, reason, expiryDate) => {
 
   await AuditLog.create({
     adminId,
-    action: 'suspend',
+    action: 'suspend_user',
     targetId: userId,
     targetType: 'user',
     details: { reason, expiry: expiryDate },
   });
+
+  // Notify user
+  const notif = await Notification.create({
+    userId: userId,
+    type: 'listing_flagged',
+    message: `Your account has been suspended. Reason: ${reason}`,
+    data: { reason, expiryDate },
+  });
+  const io = getIO();
+  io.to(`user_${userId}`).emit('notification', notif);
+
+  // Send email to user
+  try {
+    await sendEmail({
+      to: user.email,
+      subject: 'Account Suspension Notice',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #C9922A;">Account Suspended</h2>
+          <p>Hello ${user.name},</p>
+          <p>Your account has been suspended due to a violation of our terms of service.</p>
+          <p><strong>Reason:</strong> ${reason}</p>
+          ${expiryDate ? `<p><strong>Suspension expires:</strong> ${new Date(expiryDate).toLocaleDateString()}</p>` : ''}
+          <p>If you believe this is an error, please contact our support team.</p>
+          <p style="color: #666; font-size: 12px;">This is an automated email from RentalWPA.</p>
+        </div>
+      `,
+    });
+  } catch (emailError) {
+    console.error('Failed to send suspension email:', emailError);
+  }
+
   return user;
 };
 
@@ -117,11 +152,89 @@ const banUser = async (adminId, userId) => {
 
   await AuditLog.create({
     adminId,
-    action: 'ban',
+    action: 'ban_user',
     targetId: userId,
     targetType: 'user',
     details: { status: 'banned' },
   });
+
+  // Notify user
+  const notif = await Notification.create({
+    userId: userId,
+    type: 'listing_flagged',
+    message: 'Your account has been permanently banned.',
+    data: { status: 'banned' },
+  });
+  const io = getIO();
+  io.to(`user_${userId}`).emit('notification', notif);
+
+  // Send email to user
+  try {
+    await sendEmail({
+      to: user.email,
+      subject: 'Account Banned Notice',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #C9922A;">Account Permanently Banned</h2>
+          <p>Hello ${user.name},</p>
+          <p>Your account has been permanently banned due to a serious violation of our terms of service.</p>
+          <p>You will no longer be able to access your account or use our platform.</p>
+          <p>If you believe this is an error, please contact our support team.</p>
+          <p style="color: #666; font-size: 12px;">This is an automated email from RentalWPA.</p>
+        </div>
+      `,
+    });
+  } catch (emailError) {
+    console.error('Failed to send ban email:', emailError);
+  }
+
+  return user;
+};
+
+const restoreUser = async (adminId, userId) => {
+  const user = await User.findById(userId);
+  if (!user) throw new AppError('User not found', 404);
+  user.status = 'active';
+  user.suspensionReason = '';
+  user.suspensionExpiry = null;
+  await user.save();
+
+  await AuditLog.create({
+    adminId,
+    action: 'restore_user',
+    targetId: userId,
+    targetType: 'user',
+    details: { previousStatus: user.status, newStatus: 'active' },
+  });
+
+  // Notify user
+  const notif = await Notification.create({
+    userId: userId,
+    type: 'listing_approved',
+    message: 'Your account has been restored and is now active.',
+    data: { status: 'active' },
+  });
+  const io = getIO();
+  io.to(`user_${userId}`).emit('notification', notif);
+
+  // Send email to user
+  try {
+    await sendEmail({
+      to: user.email,
+      subject: 'Account Restored',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #C9922A;">Account Restored</h2>
+          <p>Hello ${user.name},</p>
+          <p>Your account has been restored and is now active. You can log in and use the platform normally.</p>
+          <p style="color: #666; font-size: 12px;">This is an automated email from RentalWPA.</p>
+        </div>
+      `,
+    });
+  } catch (emailError) {
+    console.error('Failed to send restoration email:', emailError);
+  }
+
   return user;
 };
 
@@ -156,6 +269,38 @@ const approveListing = async (adminId, listingId) => {
     targetType: 'house',
     details: { status: 'approved' },
   });
+
+  // Notify broker/owner
+  if (house.listedBy) {
+    const notif = await Notification.create({
+      userId: house.listedBy,
+      type: 'listing_approved',
+      message: `Your listing "${house.title}" has been approved by the admin.`,
+      data: { houseId: house._id },
+    });
+    const io = getIO();
+    io.to(`user_${house.listedBy}`).emit('notification', notif);
+
+    // Send email
+    const broker = await User.findById(house.listedBy);
+    try {
+      await sendEmail({
+        to: broker.email,
+        subject: 'Listing Approved',
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2 style="color: #C9922A;">Listing Approved</h2>
+            <p>Hello ${broker.name},</p>
+            <p>Your listing <strong>"${house.title}"</strong> has been approved by the admin and is now live on the platform.</p>
+            <p style="color: #666; font-size: 12px;">This is an automated email from RentalWPA.</p>
+          </div>
+        `,
+      });
+    } catch (emailError) {
+      console.error('Failed to send approval email:', emailError);
+    }
+  }
+
   return house;
 };
 
@@ -172,6 +317,40 @@ const rejectListing = async (adminId, listingId, reason) => {
     targetType: 'house',
     details: { reason },
   });
+
+  // Notify broker/owner
+  if (house.listedBy) {
+    const notif = await Notification.create({
+      userId: house.listedBy,
+      type: 'listing_rejected',
+      message: `Your listing "${house.title}" has been rejected by the admin. Reason: ${reason}`,
+      data: { houseId: house._id, reason },
+    });
+    const io = getIO();
+    io.to(`user_${house.listedBy}`).emit('notification', notif);
+
+    // Send email
+    const broker = await User.findById(house.listedBy);
+    try {
+      await sendEmail({
+        to: broker.email,
+        subject: 'Listing Rejected',
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2 style="color: #C9922A;">Listing Rejected</h2>
+            <p>Hello ${broker.name},</p>
+            <p>Your listing <strong>"${house.title}"</strong> has been rejected by the admin.</p>
+            <p><strong>Reason:</strong> ${reason}</p>
+            <p>You may edit and resubmit the listing after addressing the feedback provided.</p>
+            <p style="color: #666; font-size: 12px;">This is an automated email from RentalWPA.</p>
+          </div>
+        `,
+      });
+    } catch (emailError) {
+      console.error('Failed to send rejection email:', emailError);
+    }
+  }
+
   return house;
 };
 
@@ -230,6 +409,7 @@ module.exports = {
   approveUser,
   suspendUser,
   banUser,
+  restoreUser,
   getListings,
   approveListing,
   rejectListing,

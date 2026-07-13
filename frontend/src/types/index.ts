@@ -120,3 +120,37 @@ export interface DashboardStats {
   activeListings: number;
   recentActivity?: any[];
 }
+
+export interface BrokerApplication {
+  _id: string;
+  name: string;
+  email: string;
+  phone?: string;
+  brokerApplicationStatus: 'none' | 'pending' | 'approved' | 'rejected';
+  brokerApplicationNotes?: string;
+  brokerCompanyName?: string;
+  brokerOfficeAddress?: string;
+  brokerYearsExperience?: number;
+  brokerDescription?: string;
+  brokerNationalId?: string;
+  brokerRegistrationTxId?: Transaction | string | null;
+  createdAt?: string;
+}
+
+export interface Message {
+  _id: string;
+  conversationId: string;
+  senderId: User | string;
+  receiverId: User | string;
+  content: string;
+  read: boolean;
+  houseId?: House | string | null;
+  createdAt: string;
+}
+
+export interface Conversation {
+  conversationId: string;
+  partner: User;
+  lastMessage: Message | null;
+  unreadCount: number;
+}

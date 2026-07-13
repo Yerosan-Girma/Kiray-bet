@@ -147,7 +147,7 @@ export default function PremiumPage() {
                 <p className="text-muted-foreground text-xs">{p.duration}</p>
               </div>
               <div className="mb-5">
-                <span className="text-3xl font-black text-foreground">KSh {p.price.toLocaleString()}</span>
+                <span className="text-3xl font-black text-foreground">ETB {p.price.toLocaleString()}</span>
               </div>
               <ul className="space-y-2">
                 {p.features.map((f) => (
@@ -179,7 +179,7 @@ export default function PremiumPage() {
 
             <div className="flex items-center justify-between py-3 border-t border-border mb-4">
               <span className="text-sm text-muted-foreground">{plan.label} plan</span>
-              <span className="font-bold text-foreground">KSh {plan.price.toLocaleString()}</span>
+              <span className="font-bold text-foreground">ETB {plan.price.toLocaleString()}</span>
             </div>
 
             {status === 'polling' && (
@@ -201,7 +201,7 @@ export default function PremiumPage() {
               style={{ background: 'linear-gradient(135deg, #E8B84B, #C9922A)', color: '#070C17' }}>
               {loading
                 ? <><span className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" /> Processing...</>
-                : <><CreditCard className="w-4 h-4" /> Pay KSh {plan.price.toLocaleString()}</>}
+                : <><CreditCard className="w-4 h-4" /> Pay ETB {plan.price.toLocaleString()}</>}
             </button>
           </div>
         )}
@@ -218,7 +218,7 @@ export default function PremiumPage() {
                     <p className="text-xs text-muted-foreground">{new Date(tx.createdAt).toLocaleDateString()}</p>
                   </div>
                   <div className="text-right">
-                    <p className="font-bold text-foreground text-sm">KSh {tx.amount?.toLocaleString()}</p>
+                    <p className="font-bold text-foreground text-sm">ETB {tx.amount?.toLocaleString()}</p>
                     <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
                       tx.status === 'success' ? 'bg-green-100 text-green-700' :
                       tx.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :

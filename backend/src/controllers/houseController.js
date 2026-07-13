@@ -1,4 +1,5 @@
 const houseService = require('../services/houseService');
+const House = require('../models/House');
 const { catchAsync } = require('../utils/AppError');
 
 exports.createHouse = catchAsync(async (req, res) => {
@@ -40,6 +41,9 @@ exports.getNearbyHouses = catchAsync(async (req, res) => {
 });
 
 exports.getMyListings = catchAsync(async (req, res) => {
-  const houses = await House.find({ listedBy: req.user.id });
+  const houses = await House.find({ listedBy: req.user.id })
+    .populate('assignedBroker', 'name email phone')
+    .populate('ownerId', 'name email phone')
+    .sort({ createdAt: -1 });
   res.json({ success: true, data: houses });
 });

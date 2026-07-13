@@ -75,6 +75,27 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    // Broker application fields
+    brokerApplicationStatus: {
+      type: String,
+      enum: ['none', 'pending', 'approved', 'rejected'],
+      default: 'none',
+    },
+    brokerApplicationNotes: { type: String, default: '' },
+    brokerCompanyName: { type: String, default: '' },
+    brokerOfficeAddress: { type: String, default: '' },
+    brokerYearsExperience: { type: Number, default: 0 },
+    brokerDescription: { type: String, default: '' },
+    brokerNationalId: { type: String, default: '' },
+    brokerDocuments: { type: [String], default: [] },
+    brokerRegistrationTxId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Transaction',
+      default: null,
+    },
+    // Password reset
+    resetPasswordToken: { type: String, select: false },
+    resetPasswordExpire: { type: Date, select: false },
   },
   {
     timestamps: true,

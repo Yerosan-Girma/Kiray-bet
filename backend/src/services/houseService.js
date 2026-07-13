@@ -1,7 +1,11 @@
 const House = require('../models/House');
 const User = require('../models/User');
+const AuditLog = require('../models/AuditLog');
 const { AppError } = require('../utils/AppError');
 const { deleteFromCloudinary } = require('../utils/cloudinary');
+const { createNotification } = require('./notificationService');
+const { getIO } = require('../config/socket');
+const { sendEmail } = require('./emailService');
 
 const createHouse = async (houseData, userId) => {
   // Check if user is owner or broker
@@ -52,11 +56,59 @@ const updateHouse = async (houseId, updateData, userId, role) => {
     throw new AppError('Not authorized to update this listing', 403);
   }
 
-  // If updating images, handle Cloudinary deletion (omitted for brevity)
-  // ... (delete old images if new ones provided)
-
+  // Check if status is being changed to approved (property published)
+  const wasNotApproved = house.status !== 'approved';
   Object.assign(house, updateData);
   await house.save();
+
+  // If property was just published, notify owner
+  if (wasNotApproved && house.status === 'approved' && house.ownerId) {
+    const notif = await createNotification(
+      house.ownerId,
+      'listing_approved',
+      `Your property "${house.title}" has been published successfully and is now visible on the website.`,
+      { houseId: house._id }
+    );
+    const io = getIO();
+    io.to(`user_${house.ownerId}`).emit('notification', notif);
+
+    // Send email to owner
+    const owner = await User.findById(house.ownerId);
+    try {
+      await sendEmail({
+        to: owner.email,
+        subject: 'Property Published Successfully',
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2 style="color: #C9922A;">Property Published Successfully</h2>
+            <p>Hello ${owner.name},</p>
+            <p>Your property <strong>"${house.title}"</strong> has been published successfully and is now visible on the website.</p>
+            <p><strong>Property Details:</strong></p>
+            <ul>
+              <li>Title: ${house.title}</li>
+              <li>Location: ${house.location}</li>
+              <li>Price: KSh ${house.price.toLocaleString()}</li>
+              <li>Property Type: ${house.propertyType}</li>
+            </ul>
+            <p>You can view your property listing on the website. Potential renters can now contact the broker for inquiries.</p>
+            <p style="color: #666; font-size: 12px;">This is an automated email from RentalWPA.</p>
+          </div>
+        `,
+      });
+    } catch (emailError) {
+      console.error('Failed to send email to owner:', emailError);
+    }
+
+    // Audit log
+    await AuditLog.create({
+      userId: userId,
+      action: 'property_published',
+      targetId: house._id,
+      targetType: 'house',
+      details: { previousStatus: 'pending', newStatus: 'approved' },
+    });
+  }
+
   return house;
 };
 
@@ -76,6 +128,16 @@ const deleteHouse = async (houseId, userId, role) => {
       // log but continue
     }
   }
+
+  // Audit log before deletion
+  await AuditLog.create({
+    userId: userId,
+    adminId: role === 'admin' ? userId : null,
+    action: 'delete_listing',
+    targetId: house._id,
+    targetType: 'house',
+    details: { title: house.title, status: house.status },
+  });
 
   await house.deleteOne();
   return house;

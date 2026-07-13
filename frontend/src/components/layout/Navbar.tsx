@@ -99,6 +99,10 @@ export default function Navbar() {
                   style={{ background: "linear-gradient(135deg, #E8B84B 0%, #C9922A 100%)", color: "#070C17" }}>
                   List Property
                 </button>
+                <Link to="/broker/apply"
+                  className="text-sm font-medium text-amber-400 hover:text-amber-300 transition-colors px-3 py-2">
+                  Become a Broker
+                </Link>
               </>
             )}
           </div>
