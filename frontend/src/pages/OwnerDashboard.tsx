@@ -21,6 +21,7 @@ function StatusBadge({ status }: { status: string }) {
     rejected: { label: 'Rejected', cls: 'bg-red-100 text-red-700', icon: XCircle },
     approved: { label: 'Published', cls: 'bg-green-100 text-green-700', icon: CheckCircle },
     pending: { label: 'Pending Admin', cls: 'bg-orange-100 text-orange-700', icon: Clock },
+    rented: { label: 'Rented', cls: 'bg-purple-100 text-purple-700', icon: CheckCircle },
     none: { label: 'Draft', cls: 'bg-gray-100 text-gray-600', icon: Clock },
   };
   const { label, cls, icon: Icon } = map[status] || map.none;
@@ -114,7 +115,7 @@ function SubmitModal({ onClose }: { onClose: () => void }) {
               <div className="md:col-span-2">
                 <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1.5">Title *</label>
                 <input required value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })}
-                  placeholder="e.g. Modern 3BR in Westlands"
+                  placeholder="e.g. Modern 3BR Penthouse in Bole"
                   className="w-full px-4 py-3 border-2 border-border rounded-xl focus:outline-none focus:border-amber-500 text-sm" />
               </div>
               <div>
@@ -142,7 +143,7 @@ function SubmitModal({ onClose }: { onClose: () => void }) {
               <div className="md:col-span-2">
                 <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1.5">Location *</label>
                 <input required value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })}
-                  placeholder="e.g. Westlands, Nairobi"
+                  placeholder="e.g. Bole, Addis Ababa"
                   className="w-full px-4 py-3 border-2 border-border rounded-xl focus:outline-none focus:border-amber-500 text-sm" />
               </div>
               <div>
@@ -388,7 +389,7 @@ export default function OwnerDashboard() {
                           {broker?.name || '—'}
                         </td>
                         <td className="px-6 py-4">
-                          <StatusBadge status={(s as any).brokerSubmissionStatus || s.status} />
+                          <StatusBadge status={s.status === 'rented' ? 'rented' : ((s as any).brokerSubmissionStatus || s.status)} />
                         </td>
                         <td className="px-6 py-4 text-xs text-muted-foreground">
                           {new Date(s.createdAt).toLocaleDateString()}

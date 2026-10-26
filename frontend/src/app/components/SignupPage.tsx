@@ -58,20 +58,22 @@ export function SignupPage() {
       const normalizedUser = { ...user, _id: user._id || user.id };
       login(normalizedUser, accessToken, true); // remember me = true
 
-      toast.success('Account created successfully! Welcome to NestHub!');
+      toast.success('Account created successfully! Welcome to Kiray Bet!');
 
       // Navigate to appropriate dashboard based on role
       const role = normalizedUser.role;
-      if (role === 'admin') {
+      if (formData.role === 'broker') {
+        // If registering with intent to become broker, immediately navigate to application & 500 ETB payment
+        navigate('/broker/apply');
+      } else if (role === 'admin') {
         navigate('/admin');
       } else if (role === 'owner') {
         navigate('/owner');
       } else if (role === 'broker') {
-        // Approved brokers go to dashboard, unapproved go to pending
         if (normalizedUser.isApproved) {
           navigate('/broker');
         } else {
-          navigate('/broker/pending');
+          navigate('/broker/apply');
         }
       } else {
         // renter
@@ -102,7 +104,7 @@ export function SignupPage() {
               Create Account
             </h1>
             <p className="text-gray-600">
-              Join NestHub and find your perfect rental
+              Join Kiray Bet and find your perfect rental
             </p>
           </div>
 

@@ -30,6 +30,7 @@ const AdminDashboard = lazy(() => import('../pages/AdminDashboard'));
 const OwnerDashboard = lazy(() => import('../pages/OwnerDashboard'));
 const BrokerDashboard = lazy(() => import('../pages/BrokerDashboard'));
 const ContactPage = lazy(() => import('../pages/ContactPage'));
+const AboutPage = lazy(() => import('../pages/AboutPage'));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -65,6 +66,7 @@ export default function App() {
                     <Route path="/properties/:id" element={<PropertyDetailPage />} />
                     <Route path="/premium" element={<PremiumPage />} />
                     <Route path="/contact" element={<ContactPage />} />
+                    <Route path="/about" element={<AboutPage />} />
 
                     {/* Auth */}
                     <Route path="/login" element={<LoginPage />} />

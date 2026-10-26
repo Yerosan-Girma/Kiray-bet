@@ -11,7 +11,7 @@ export default function Footer() {
       { label:"Open Houses", href:"/properties" },
     ]},
     { title:"Company",  links:[
-      { label:"About Us", href:"/" },
+      { label:"About Us", href:"/about" },
       { label:"How It Works", href:"/" },
       { label:"Careers", href:"/" },
       { label:"Press", href:"/" },
@@ -31,17 +31,22 @@ export default function Footer() {
       <div className="max-w-7xl mx-auto px-6 pt-16 pb-8">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-10 mb-14">
           <div>
-            <div className="flex items-center gap-2.5 mb-5">
-              <div className="w-8 h-8 rounded-xl flex items-center justify-center"
+            <div className="flex items-center gap-3 mb-5">
+              <div className="w-9 h-9 rounded-xl flex items-center justify-center shadow-lg shadow-amber-500/20"
                 style={{ background: "linear-gradient(135deg, #E8B84B, #C9922A)" }}>
-                <Home className="w-4 h-4 text-[#070C17]" />
+                <Home className="w-4.5 h-4.5 text-[#070C17]" />
               </div>
-              <span className="text-white font-bold text-lg" style={{ fontFamily: "Urbanist, sans-serif" }}>
-                Nest<span style={{ color: "#E8B84B" }}>Hub</span>
-              </span>
+              <div className="flex flex-col">
+                <span className="text-white font-black text-xl leading-none" style={{ fontFamily: "Urbanist, sans-serif" }}>
+                  Kiray<span style={{ color: "#E8B84B" }}>Bet</span>
+                </span>
+                <span className="text-[10px] font-bold text-white/50 tracking-wider uppercase mt-0.5">
+                  ኪራይ ቤት · Ethiopia
+                </span>
+              </div>
             </div>
             <p className="text-sm text-white/40 leading-relaxed mb-5">
-              East Africa's most trusted rental platform. Find, rent, and manage properties with ease.
+              Ethiopia's most trusted home rental marketplace. Find, rent, and manage houses across Addis Ababa and beyond with verified brokers and instant agreements.
             </p>
             <div className="flex gap-3">
               {[Facebook, Twitter, Instagram, Youtube].map((Icon, i) => (
@@ -67,7 +72,7 @@ export default function Footer() {
 
         {/* Bottom bar */}
         <div className="flex flex-col md:flex-row items-center justify-between gap-4 pt-8 border-t" style={{ borderColor: "rgba(255,255,255,0.06)" }}>
-          <p className="text-xs text-white/30">© 2024 NestHub. All rights reserved. Built for East Africa.</p>
+          <p className="text-xs text-white/30">© 2026 Kiray Bet (ኪራይ ቤት). All rights reserved. Built for Ethiopia 🇪🇹.</p>
           <div className="flex items-center gap-2 text-xs text-white/30">
             <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
             All systems operational

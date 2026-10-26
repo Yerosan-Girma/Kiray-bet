@@ -30,9 +30,27 @@ const LOCATIONS = [
 ];
 
 const TESTIMONIALS = [
-  { name:"Amara Odhiambo",   role:"Business Executive",   avatar:"1494790108755-2616b7b4e9f4", text:"Found my dream penthouse in under 48 hours. The 3D virtual tours were jaw-dropping — felt like I was already living there before I signed.",    rating:5 },
-  { name:"David Mwangi",     role:"Property Investor",    avatar:"1507003211169-0a1dd7228f2d", text:"Listed five properties and got qualified tenants within days. The analytics dashboard gives me everything I need to manage my portfolio.", rating:5 },
-  { name:"Fatima Al-Rashid", role:"Relocating Professional",avatar:"1438761681033-6461ffad8d80",text:"Moving from Dubai, I needed a trusted platform. NestHub delivered — verified listings, instant responses, seamless onboarding.",          rating:5 },
+  {
+    name: "Chaltu Gerasu",
+    role: "Tenant, Bole (Addis Ababa)",
+    avatar: "1534528741775-53994a69daeb",
+    text: "Finding a rental apartment in Bole used to take weeks of calling random delalas. With Kiray Bet, I found a clean 2-bedroom flat with verified photos and fair ETB pricing in just 2 days. The digital agreement gave me total peace of mind.",
+    rating: 5,
+  },
+  {
+    name: "Gelaso Adugna",
+    role: "Property Owner, Kazanchis",
+    avatar: "1507003211169-0a1dd7228f2d",
+    text: "As a landlord, I was tired of unreliable middlemen inflating prices behind my back. Kiray Bet allowed me to assign an approved broker with verified credentials. My property was rented in one week, and the lease terms are completely transparent.",
+    rating: 5,
+  },
+  {
+    name: "Tesfaye Abebe",
+    role: "Family Renter, CMC",
+    avatar: "1500648767791-00dcc994a43e",
+    text: "Relocating my family to CMC was effortless thanks to Kiray Bet. The house details, neighborhood amenities, and monthly rent were 100% accurate. We signed the lease and moved in without any unexpected commission surprises.",
+    rating: 5,
+  },
 ];
 
 const STATS = [
@@ -128,7 +146,7 @@ function Hero() {
             className="inline-flex items-center gap-2 mb-6 px-4 py-2 rounded-full border text-sm font-medium"
             style={{ background: "rgba(232,184,75,0.12)", borderColor: "rgba(232,184,75,0.35)", color: "#E8B84B" }}>
             <Zap className="w-3.5 h-3.5" />
-            #1 Rental Platform in East Africa
+            #1 Rental Platform in Ethiopia · የኢትዮጵያ ቀዳሚ የቤት ኪራይ መድረክ
           </motion.div>
 
           {/* Headline */}
@@ -149,7 +167,7 @@ function Hero() {
 
           <motion.p initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, delay: 0.5 }}
             className="text-lg text-white/65 mb-10 max-w-2xl mx-auto leading-relaxed">
-            Discover 15,000+ verified rental properties across East Africa. From luxury villas to cozy studios — your next chapter starts here.
+            Discover verified rental properties across Addis Ababa, Hawassa, Bahir Dar, and all of Ethiopia. From modern apartments to luxury villas — your next home starts here.
           </motion.p>
 
           {/* Search Card — glassmorphism */}
@@ -276,7 +294,7 @@ function PopularLocations() {
           className="text-center mb-14">
           <span className="text-sm font-semibold uppercase tracking-widest" style={{ color: "#E8B84B" }}>Explore Cities</span>
           <h2 className="text-4xl md:text-5xl font-black text-white mt-2" style={{ fontFamily: "Urbanist, sans-serif" }}>Popular Locations</h2>
-          <p className="text-white/50 mt-3 max-w-lg mx-auto text-sm">Discover premium rentals in the most sought-after cities across East Africa</p>
+          <p className="text-white/50 mt-3 max-w-lg mx-auto text-sm">Discover premium rentals in the most sought-after cities across Ethiopia</p>
         </motion.div>
 
         {/* Large featured + small grid */}
@@ -717,9 +735,8 @@ function Testimonials() {
                   "{TESTIMONIALS[active].text}"
                 </p>
                 <div className="flex items-center justify-center gap-4">
-                  <img src={`https://images.unsplash.com/photo-${TESTIMONIALS[active].avatar}?w=56&h=56&fit=crop&auto=format`}
-                    alt={TESTIMONIALS[active].name} className="w-14 h-14 rounded-full object-cover ring-2"
-                    style={{ ringColor: "#E8B84B" }} />
+                  <img src={`https://images.unsplash.com/photo-${TESTIMONIALS[active].avatar}?w=120&h=120&fit=crop&auto=format&q=80`}
+                    alt={TESTIMONIALS[active].name} className="w-14 h-14 rounded-full object-cover ring-2 ring-amber-400/50 shadow-md" />
                   <div className="text-left">
                     <p className="font-bold text-foreground" style={{ fontFamily: "Urbanist, sans-serif" }}>{TESTIMONIALS[active].name}</p>
                     <p className="text-sm text-muted-foreground">{TESTIMONIALS[active].role}</p>
@@ -792,7 +809,7 @@ function Newsletter() {
                 style={{ background: "rgba(232,184,75,0.15)", border: "1px solid rgba(232,184,75,0.4)" }}>
                 <CheckCircle className="w-7 h-7" style={{ color: "#E8B84B" }} />
               </div>
-              <p className="text-white font-semibold">You're in! Welcome to NestHub Insiders.</p>
+              <p className="text-white font-semibold">You're in! Welcome to Kiray Bet Insiders.</p>
               <p className="text-white/40 text-sm">Check your inbox for a welcome gift.</p>
             </motion.div>
           )}
@@ -810,9 +827,9 @@ function Newsletter() {
 function FAQ() {
   const [open, setOpen] = useState<number | null>(null);
   const faqs = [
-    { q:"How do I list my property on NestHub?",          a:"Create an account, choose Owner or Broker, then click 'List Property'. Our guided flow helps you add photos, set pricing, and publish in under 10 minutes." },
-    { q:"Are all listings verified?",                      a:"Yes. Every listing goes through our 3-step verification: document check, physical inspection, and owner ID confirmation before going live." },
-    { q:"What payment methods are accepted?",             a:"We support M-Pesa, credit/debit cards, and bank transfers. All transactions are encrypted and processed via our secure payment gateway." },
+    { q:"How do I list my property on Kiray Bet?",          a:"Create an account, choose Owner or Broker, then click 'List Property'. Our guided flow helps you add photos, select an approved broker, and publish seamlessly." },
+    { q:"Are all listings verified?",                      a:"Yes. Every listing goes through our verification: document check, broker validation, and owner confirmation before going live." },
+    { q:"What payment methods are accepted?",             a:"We support Telebirr, CBE Birr, Chapa, credit/debit cards, and direct bank transfers across Ethiopian banks." },
     { q:"Can I schedule a virtual tour before visiting?", a:"Absolutely. Most premium listings include immersive 3D virtual tours. You can also request a live video tour with the owner through our chat system." },
     { q:"What happens if I have a dispute with a landlord?",a:"Our dedicated mediation team handles disputes within 48 hours. We hold payments in escrow until both parties confirm satisfaction." },
   ];

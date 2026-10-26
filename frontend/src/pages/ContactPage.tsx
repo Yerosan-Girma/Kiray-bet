@@ -20,7 +20,7 @@ const INFO_CARDS = [
   {
     icon: Mail,
     title: 'Email Us',
-    value: 'support@nesthub.com',
+    value: 'support@kiraybet.et',
     sub: 'We reply within 24 hours',
     color: '#4F8EF7',
     glow: 'rgba(79,142,247,0.15)',
@@ -37,7 +37,7 @@ const INFO_CARDS = [
     icon: MapPin,
     title: 'Visit Us',
     value: 'Bole, Addis Ababa',
-    sub: 'NestHub HQ, Ethiopia',
+    sub: 'Kiray Bet HQ, Ethiopia',
     color: '#34D399',
     glow: 'rgba(52,211,153,0.15)',
   },
@@ -53,7 +53,7 @@ const INFO_CARDS = [
 
 const FAQ = [
   { q: 'How long does it take to list a property?', a: 'After broker review and approval, your property goes live immediately — no waiting for admin.' },
-  { q: 'Is NestHub free for renters?', a: 'Absolutely. Searching, contacting brokers, and booking viewings is completely free for renters.' },
+  { q: 'Is Kiray Bet free for renters?', a: 'Absolutely. Searching, contacting brokers, and booking viewings is completely free for renters.' },
   { q: 'How do I become a broker?', a: 'Click "Become a Broker" in the navbar, fill in your details and pay the one-time registration fee.' },
   { q: 'What payment methods do you accept?', a: 'We support Chapa, Telebirr, and bank transfers for premium upgrades and broker registration.' },
 ];
@@ -343,7 +343,7 @@ export default function ContactPage() {
               <div className="absolute bottom-0 left-0 right-0 p-5">
                 <div className="flex items-center gap-2 mb-1">
                   <MapPin className="w-4 h-4 text-emerald-400" />
-                  <span className="text-white font-bold text-sm">NestHub Headquarters</span>
+                  <span className="text-white font-bold text-sm">Kiray Bet Headquarters</span>
                 </div>
                 <p className="text-white/40 text-xs">Bole Road, Addis Ababa, Ethiopia</p>
               </div>

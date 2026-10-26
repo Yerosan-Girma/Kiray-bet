@@ -222,10 +222,17 @@ export default function AdminDashboard() {
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-1 justify-end">
                             {!u.isApproved && (
-                              <button onClick={() => approveUser.mutate(u._id)}
-                                className="p-1.5 rounded-lg bg-green-50 text-green-600 hover:bg-green-100 text-xs">
-                                Approve
-                              </button>
+                              u.role === 'broker' ? (
+                                <button onClick={() => setTab('brokers')}
+                                  className="px-2 py-1 rounded-lg bg-amber-50 text-amber-700 hover:bg-amber-100 text-xs font-semibold">
+                                  Review in Broker Apps
+                                </button>
+                              ) : (
+                                <button onClick={() => approveUser.mutate(u._id)}
+                                  className="p-1.5 rounded-lg bg-green-50 text-green-600 hover:bg-green-100 text-xs font-semibold">
+                                  Approve
+                                </button>
+                              )
                             )}
                             {u.status === 'active' && (
                               <button onClick={() => suspendUser.mutate(u._id)}
@@ -345,10 +352,11 @@ export default function AdminDashboard() {
             <div className="p-5 border-b border-border flex items-center gap-4">
               <select value={brokerStatus} onChange={(e) => { setBrokerStatus(e.target.value); setBrokerPage(1); }}
                 className="px-4 py-2.5 border border-border rounded-xl text-sm focus:outline-none focus:border-amber-500 bg-background">
-                <option value="">All Status</option>
-                <option value="pending">Pending</option>
-                <option value="approved">Approved</option>
-                <option value="rejected">Rejected</option>
+                <option value="">All Applications</option>
+                <option value="pending">Pending Review (500 ETB Paid)</option>
+                <option value="payment_pending">Payment Pending (Unpaid)</option>
+                <option value="approved">Approved Brokers</option>
+                <option value="rejected">Rejected Applications</option>
               </select>
             </div>
             {brokerLoading ? (
@@ -385,22 +393,44 @@ export default function AdminDashboard() {
                           <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${
                             app.brokerApplicationStatus === 'pending' ? 'bg-yellow-100 text-yellow-700' :
                             app.brokerApplicationStatus === 'approved' ? 'bg-green-100 text-green-700' :
+                            app.brokerApplicationStatus === 'payment_pending' ? 'bg-amber-100 text-amber-800' :
                             'bg-red-100 text-red-700'
-                          }`}>{app.brokerApplicationStatus}</span>
+                          }`}>
+                            {app.brokerApplicationStatus === 'payment_pending' ? 'Payment Pending' :
+                             app.brokerApplicationStatus === 'pending' ? 'Pending Admin Review' :
+                             app.brokerApplicationStatus}
+                          </span>
 
-                          {tx && (
+                          {tx ? (
                             <div className="text-right">
-                              <p className="text-xs text-muted-foreground">Payment: <span className="font-semibold text-foreground">ETB {tx.amount}</span></p>
-                              <p className="text-xs text-green-600 font-semibold capitalize">{tx.status} · {tx.paymentMethod}</p>
+                              <p className="text-xs text-muted-foreground">Registration Fee: <span className="font-semibold text-foreground">ETB {tx.amount}</span></p>
+                              <p className={`text-xs font-semibold capitalize ${tx.status === 'success' ? 'text-green-600' : 'text-amber-600'}`}>
+                                {tx.status === 'success' ? '✓ Paid & Confirmed' : '⏳ Payment Unconfirmed'} · {tx.paymentMethod}
+                              </p>
+                              {tx.receiptNumber && (
+                                <p className="text-[10px] text-muted-foreground font-mono">{tx.receiptNumber}</p>
+                              )}
+                            </div>
+                          ) : (
+                            <div className="text-right">
+                              <p className="text-xs text-red-600 font-semibold">No Payment Initiated</p>
                             </div>
                           )}
 
                           {app.brokerApplicationStatus === 'pending' && (
                             <div className="flex gap-2">
-                              <button onClick={() => approveBroker.mutate(app._id)} disabled={approveBroker.isPending}
-                                className="px-3 py-1.5 rounded-lg bg-green-50 text-green-700 hover:bg-green-100 text-xs font-semibold transition-colors">
-                                Approve
-                              </button>
+                              {tx?.status === 'success' ? (
+                                <button onClick={() => approveBroker.mutate(app._id)} disabled={approveBroker.isPending}
+                                  className="px-3 py-1.5 rounded-lg bg-green-50 text-green-700 hover:bg-green-100 text-xs font-semibold transition-colors">
+                                  Approve Broker
+                                </button>
+                              ) : (
+                                <button disabled
+                                  title="Cannot approve without verified 500 ETB payment"
+                                  className="px-3 py-1.5 rounded-lg bg-gray-100 text-gray-400 text-xs font-semibold cursor-not-allowed">
+                                  Payment Required
+                                </button>
+                              )}
                               <button onClick={() => {
                                 const reason = prompt('Rejection reason:') || 'Does not meet requirements';
                                 rejectBroker.mutate({ userId: app._id, reason });

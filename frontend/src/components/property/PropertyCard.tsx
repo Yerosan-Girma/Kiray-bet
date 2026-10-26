@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { motion } from "motion/react";
 import { useNavigate } from "react-router";
-import { Award, Heart, Star, MapPin, Bed, Bath, Square, Eye } from "lucide-react";
+import { Award, Heart, Star, MapPin, Bed, Bath, Square, Eye, Key } from "lucide-react";
 import { use3DTilt } from "../../hooks/use3DTilt";
 import { House } from "../../types";
 
@@ -33,6 +33,7 @@ export default function PropertyCard({ house, index }: PropertyCardProps) {
   const rating = house.rating || 4.5;
   const reviews = house.reviews || 0;
   const views = house.views || 0;
+  const isRented = house.status === 'rented';
 
   return (
     <motion.div initial={{ opacity: 0, y: 50 }} whileInView={{ opacity: 1, y: 0 }}
@@ -46,20 +47,24 @@ export default function PropertyCard({ house, index }: PropertyCardProps) {
 
       {/* Image */}
       <div className="relative aspect-[4/3] overflow-hidden bg-muted">
-        <img src={image.includes('http') ? image : HQ(image)} alt={title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
+        <img src={image.includes('http') ? image : HQ(image)} alt={title} className={`w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 ${isRented ? 'grayscale-[20%]' : ''}`} />
         {/* Gradient overlay */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
 
-        {/* Tag */}
-        {tag && (
+        {/* Tag / Rented Status */}
+        {isRented ? (
+          <div className="absolute top-4 left-4 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-black shadow-lg uppercase tracking-wider bg-purple-600 text-white border border-purple-400/50">
+            <Key className="w-3.5 h-3.5" /> Rented
+          </div>
+        ) : tag ? (
           <div className="absolute top-4 left-4 px-3 py-1 rounded-full text-xs font-bold"
             style={{ background: "linear-gradient(135deg, #E8B84B, #C9922A)", color: "#070C17" }}>
             {tag}
           </div>
-        )}
+        ) : null}
 
         {/* Premium badge */}
-        {premium && (
+        {premium && !isRented && (
           <div className="absolute top-4 right-14 flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold"
             style={{ background: "rgba(7,12,23,0.8)", backdropFilter: "blur(8px)", color: "#E8B84B", border: "1px solid rgba(232,184,75,0.4)" }}>
             <Award className="w-3 h-3" /> Premium
@@ -74,11 +79,18 @@ export default function PropertyCard({ house, index }: PropertyCardProps) {
         </button>
 
         {/* Price on image */}
-        <div className="absolute bottom-4 left-4 text-white">
-          <span className="text-xl font-black" style={{ fontFamily: "Urbanist, sans-serif" }}>
-            ETB {price.toLocaleString()}
-          </span>
-          <span className="text-white/70 text-xs ml-1">{priceUnit}</span>
+        <div className="absolute bottom-4 left-4 text-white flex items-center gap-2">
+          <div>
+            <span className="text-xl font-black" style={{ fontFamily: "Urbanist, sans-serif" }}>
+              ETB {price.toLocaleString()}
+            </span>
+            <span className="text-white/70 text-xs ml-1">{priceUnit}</span>
+          </div>
+          {isRented && (
+            <span className="px-2.5 py-0.5 rounded-md bg-purple-900/90 text-purple-200 text-[10px] font-bold uppercase tracking-wider border border-purple-400/40">
+              Leased
+            </span>
+          )}
         </div>
       </div>
 

@@ -1,9 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
 import {
-  Briefcase, MapPin, Clock, FileText, CreditCard,
-  CheckCircle, ArrowRight, ArrowLeft, User, Building2, Phone,
+  Briefcase, MapPin, Clock, CreditCard,
+  CheckCircle, ArrowRight, ArrowLeft, User, Building2,
 } from 'lucide-react';
 import { brokerService } from '../services/broker.service';
 import { useAuth } from '../context/AuthContext';
@@ -23,14 +23,29 @@ export default function BrokerApplyPage() {
   const [loading, setLoading] = useState(false);
 
   const [form, setForm] = useState({
-    companyName: '',
-    officeAddress: '',
-    yearsExperience: '',
-    description: '',
-    nationalId: '',
+    companyName: user?.brokerCompanyName || '',
+    officeAddress: user?.brokerOfficeAddress || '',
+    yearsExperience: user?.brokerYearsExperience ? String(user.brokerYearsExperience) : '',
+    description: user?.brokerDescription || '',
+    nationalId: user?.brokerNationalId || '',
     paymentMethod: 'telebirr' as 'telebirr' | 'bank_transfer',
   });
   const [transactionId, setTransactionId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!user) return;
+    if (user.role === 'broker' && (user as any).isApproved) {
+      navigate('/broker', { replace: true });
+    } else if ((user as any).brokerApplicationStatus === 'pending') {
+      navigate('/broker/pending', { replace: true });
+    } else if ((user as any).brokerApplicationStatus === 'payment_pending' && (user as any).brokerRegistrationTxId) {
+      const txId = typeof (user as any).brokerRegistrationTxId === 'object'
+        ? (user as any).brokerRegistrationTxId._id
+        : (user as any).brokerRegistrationTxId;
+      setTransactionId(txId);
+      setStep(2); // Jump to confirm payment
+    }
+  }, [user, navigate]);
 
   const handleSubmit = async () => {
     setLoading(true);
@@ -40,9 +55,15 @@ export default function BrokerApplyPage() {
         yearsExperience: Number(form.yearsExperience) || 0,
       });
       // Store transaction ID for confirmation step
-      setTransactionId(result.data.transaction._id);
+      const txId = result.data.transaction?._id;
+      setTransactionId(txId);
+      updateUser({
+        ...user,
+        brokerApplicationStatus: 'payment_pending',
+        brokerRegistrationTxId: txId,
+      } as any);
       setStep(2); // Move to confirm payment step
-      toast.success('Payment initiated! Please confirm to complete application.');
+      toast.success('Payment initiated! Please confirm 500 ETB payment to submit your application.');
     } catch (err: any) {
       toast.error(err.response?.data?.message || 'Failed to initiate payment');
     } finally {
@@ -51,14 +72,21 @@ export default function BrokerApplyPage() {
   };
 
   const handleConfirmPayment = async () => {
-    if (!transactionId) return;
+    if (!transactionId) {
+      toast.error('Transaction ID missing. Please initiate payment again.');
+      setStep(1);
+      return;
+    }
     setLoading(true);
     try {
       await brokerService.confirmBrokerPayment(transactionId);
       // Update local user state to reflect pending status
-      updateUser({ brokerApplicationStatus: 'pending' } as any);
+      updateUser({
+        ...user,
+        brokerApplicationStatus: 'pending',
+      } as any);
       setStep(3); // Move to confirmation step
-      toast.success('Payment confirmed! Application submitted for review.');
+      toast.success('Payment of 500 ETB confirmed! Application submitted for admin review.');
     } catch (err: any) {
       toast.error(err.response?.data?.message || 'Failed to confirm payment');
     } finally {
@@ -81,10 +109,10 @@ export default function BrokerApplyPage() {
             <Briefcase className="w-8 h-8 text-[#070C17]" />
           </div>
           <h1 className="text-3xl font-black text-foreground" style={{ fontFamily: 'Urbanist, sans-serif' }}>
-            Become a Broker
+            Become an Approved Broker
           </h1>
           <p className="text-muted-foreground text-sm mt-2">
-            Join our network of professional property brokers
+            Complete your registration, pay the 500 ETB fee, and get verified by Admin
           </p>
         </div>
 
@@ -114,7 +142,7 @@ export default function BrokerApplyPage() {
           {step === 0 && (
             <motion.div key="form" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}
               className="bg-white rounded-3xl border border-border shadow-sm p-8 space-y-5">
-              <h2 className="font-bold text-foreground text-xl mb-2">Your Application</h2>
+              <h2 className="font-bold text-foreground text-xl mb-2">Step 1: Your Application Details</h2>
 
               {/* Read-only user info */}
               <div className="grid grid-cols-2 gap-4 p-4 rounded-2xl bg-muted/40">
@@ -130,19 +158,19 @@ export default function BrokerApplyPage() {
 
               <div>
                 <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5">
-                  Company Name (optional)
+                  Company / Agency Name (optional)
                 </label>
                 <div className="relative">
                   <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                   <input value={form.companyName} onChange={(e) => setForm({ ...form, companyName: e.target.value })}
-                    placeholder="Your real estate company"
+                    placeholder="e.g. Addis Real Estate Services"
                     className="w-full pl-10 pr-4 py-3 border-2 border-border rounded-xl focus:outline-none focus:border-amber-500 text-sm" />
                 </div>
               </div>
 
               <div>
                 <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5">
-                  National ID (optional)
+                  National ID / License Number (optional)
                 </label>
                 <div className="relative">
                   <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -159,7 +187,7 @@ export default function BrokerApplyPage() {
                 <div className="relative">
                   <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                   <input required value={form.officeAddress} onChange={(e) => setForm({ ...form, officeAddress: e.target.value })}
-                    placeholder="e.g. Westlands, Nairobi"
+                    placeholder="e.g. Bole Medhanialem, Addis Ababa"
                     className="w-full pl-10 pr-4 py-3 border-2 border-border rounded-xl focus:outline-none focus:border-amber-500 text-sm" />
                 </div>
               </div>
@@ -172,18 +200,18 @@ export default function BrokerApplyPage() {
                   <Clock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                   <input required type="number" min="0" max="50" value={form.yearsExperience}
                     onChange={(e) => setForm({ ...form, yearsExperience: e.target.value })}
-                    placeholder="e.g. 3"
+                    placeholder="e.g. 4"
                     className="w-full pl-10 pr-4 py-3 border-2 border-border rounded-xl focus:outline-none focus:border-amber-500 text-sm" />
                 </div>
               </div>
 
               <div>
                 <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5">
-                  Personal Description *
+                  Professional Bio / Description *
                 </label>
                 <textarea required rows={4} value={form.description}
                   onChange={(e) => setForm({ ...form, description: e.target.value })}
-                  placeholder="Tell us about your experience and why you want to join NestHub..."
+                  placeholder="Describe your background in property management, rental brokerage, and client service..."
                   className="w-full px-4 py-3 border-2 border-border rounded-xl focus:outline-none focus:border-amber-500 text-sm resize-none" />
               </div>
 
@@ -195,17 +223,17 @@ export default function BrokerApplyPage() {
             </motion.div>
           )}
 
-          {/* Step 1: Payment */}
+          {/* Step 1: Payment Selection */}
           {step === 1 && (
             <motion.div key="payment" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}
               className="bg-white rounded-3xl border border-border shadow-sm p-8">
               <button onClick={() => setStep(0)} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-6 transition-colors">
-                <ArrowLeft className="w-4 h-4" /> Back
+                <ArrowLeft className="w-4 h-4" /> Back to details
               </button>
 
-              <h2 className="font-bold text-foreground text-xl mb-2">Registration Fee</h2>
+              <h2 className="font-bold text-foreground text-xl mb-2">Step 2: Registration Fee (500 ETB)</h2>
               <p className="text-muted-foreground text-sm mb-6">
-                A one-time registration fee is required to process your broker application.
+                All broker applicants are required to pay a one-time non-refundable registration fee of <strong>500 ETB</strong> before admin approval.
               </p>
 
               {/* Fee summary */}
@@ -214,7 +242,7 @@ export default function BrokerApplyPage() {
                   <span className="text-sm font-medium text-amber-800">Broker Registration Fee</span>
                   <span className="text-xl font-black text-amber-700">ETB 500</span>
                 </div>
-                <p className="text-xs text-amber-600 mt-1">One-time, non-refundable</p>
+                <p className="text-xs text-amber-600 mt-1">Required for verification & platform credentials</p>
               </div>
 
               {/* Payment method */}
@@ -246,11 +274,11 @@ export default function BrokerApplyPage() {
                 style={{ background: 'linear-gradient(135deg, #E8B84B, #C9922A)', color: '#070C17' }}>
                 {loading
                   ? <><span className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" /> Processing...</>
-                  : <><CreditCard className="w-4 h-4" /> Initiate Payment</>}
+                  : <><CreditCard className="w-4 h-4" /> Pay 500 ETB Now</>}
               </button>
 
               <p className="text-xs text-center text-muted-foreground mt-4">
-                🔒 This is a mock payment. No real money will be charged.
+                🔒 Secure mock payment simulation for development & testing.
               </p>
             </motion.div>
           )}
@@ -263,25 +291,29 @@ export default function BrokerApplyPage() {
                 <CreditCard className="w-10 h-10 text-blue-500" />
               </div>
               <h2 className="text-2xl font-black text-foreground mb-3" style={{ fontFamily: 'Urbanist, sans-serif' }}>
-                Confirm Payment
+                Confirm Registration Payment
               </h2>
               <p className="text-muted-foreground text-sm mb-2">
-                Payment has been initiated for ETB 500
+                Registration fee: <span className="font-bold text-foreground">ETB 500</span>
               </p>
               <p className="text-muted-foreground text-sm mb-8">
-                Please confirm the payment to complete your broker application submission.
+                Confirm your 500 ETB payment to transmit your application to Admin for review and approval.
               </p>
 
               <div className="p-4 rounded-2xl bg-blue-50 border border-blue-200 mb-8 text-left">
-                <p className="text-xs font-semibold text-blue-800 uppercase mb-3">Payment Details</p>
+                <p className="text-xs font-semibold text-blue-800 uppercase mb-3">Transaction Summary</p>
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
-                    <span className="text-blue-700">Amount</span>
+                    <span className="text-blue-700">Amount Due</span>
                     <span className="font-bold text-blue-900">ETB 500</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-blue-700">Method</span>
+                    <span className="text-blue-700">Payment Channel</span>
                     <span className="font-bold text-blue-900 capitalize">{form.paymentMethod}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-blue-700">Application Status</span>
+                    <span className="font-bold text-amber-700">Payment Pending Confirmation</span>
                   </div>
                 </div>
               </div>
@@ -289,14 +321,14 @@ export default function BrokerApplyPage() {
               <div className="flex gap-3">
                 <button onClick={() => setStep(1)} disabled={loading}
                   className="flex-1 py-3 rounded-xl border-2 border-border font-semibold text-sm text-foreground hover:bg-muted transition-colors disabled:opacity-50">
-                  Cancel
+                  Change Method
                 </button>
                 <button onClick={handleConfirmPayment} disabled={loading}
                   className="flex-1 py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-50 transition-all hover:scale-[1.02]"
                   style={{ background: 'linear-gradient(135deg, #E8B84B, #C9922A)', color: '#070C17' }}>
                   {loading
-                    ? <><span className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" /> Confirming...</}
-                    : <><CheckCircle className="w-4 h-4" /> Confirm Payment</>}
+                    ? <><span className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" /> Confirming...</>
+                    : <><CheckCircle className="w-4 h-4" /> Confirm 500 ETB Payment</>}
                 </button>
               </div>
             </motion.div>
@@ -310,38 +342,40 @@ export default function BrokerApplyPage() {
                 <CheckCircle className="w-10 h-10 text-green-500" />
               </div>
               <h2 className="text-2xl font-black text-foreground mb-3" style={{ fontFamily: 'Urbanist, sans-serif' }}>
-                Application Submitted!
+                Payment Confirmed & Application Submitted!
               </h2>
               <p className="text-muted-foreground text-sm mb-2">
-                Your broker application and payment have been received.
+                Your 500 ETB registration payment has been confirmed.
               </p>
               <p className="text-muted-foreground text-sm mb-8">
-                Our admin team will review your application and notify you within 24–48 hours.
+                Your broker profile is now waiting for administrator review and approval.
               </p>
 
               <div className="p-4 rounded-2xl bg-muted/40 text-left mb-8">
-                <p className="text-xs font-semibold text-muted-foreground uppercase mb-3">What happens next?</p>
+                <p className="text-xs font-semibold text-muted-foreground uppercase mb-3">Workflow Progress</p>
                 {[
-                  'Payment confirmed successfully',
-                  'Admin reviews your application',
-                  'You receive an approval or rejection notification',
-                  'Once approved, your role changes to Broker',
-                  'You can access the Broker Dashboard',
-                ].map((step, i) => (
-                  <div key={i} className="flex items-start gap-3 mb-2">
-                    <span className="w-5 h-5 rounded-full bg-amber-100 text-amber-700 text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">
-                      {i + 1}
-                    </span>
-                    <p className="text-sm text-foreground">{step}</p>
+                  '1. Application details submitted ✅',
+                  '2. 500 ETB payment confirmed ✅',
+                  '3. Admin reviews broker credentials ⏳',
+                  '4. Broker role activated upon approval 🎯',
+                ].map((item, i) => (
+                  <div key={i} className="flex items-start gap-2 mb-2">
+                    <p className="text-sm text-foreground">{item}</p>
                   </div>
                 ))}
               </div>
 
-              <button onClick={() => navigate('/')}
-                className="w-full py-3 rounded-xl font-bold text-sm transition-all hover:scale-[1.02]"
-                style={{ background: 'linear-gradient(135deg, #E8B84B, #C9922A)', color: '#070C17' }}>
-                Back to Home
-              </button>
+              <div className="flex gap-3">
+                <button onClick={() => navigate('/broker/pending')}
+                  className="flex-1 py-3 rounded-xl border-2 border-border font-semibold text-sm text-foreground hover:bg-muted transition-colors">
+                  View Status
+                </button>
+                <button onClick={() => navigate('/')}
+                  className="flex-1 py-3 rounded-xl font-bold text-sm transition-all hover:scale-[1.02]"
+                  style={{ background: 'linear-gradient(135deg, #E8B84B, #C9922A)', color: '#070C17' }}>
+                  Back to Home
+                </button>
+              </div>
             </motion.div>
           )}
         </AnimatePresence>

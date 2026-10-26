@@ -26,12 +26,13 @@ function useDebounce<T>(value: T, delay = 400): T {
 }
 
 export default function PropertiesPage() {
+  const [statusTab, setStatusTab] = useState<'approved' | 'rented' | 'all'>('approved');
   const [filters, setFilters] = useState<HouseFilters>({ sort: 'newest', page: 1, limit: 12 });
   const [search, setSearch] = useState('');
   const [showFilters, setShowFilters] = useState(false);
   const [page, setPage] = useState(1);
 
-  const queryFilters = { ...filters, search: search || undefined, page };
+  const queryFilters = { ...filters, status: statusTab, search: search || undefined, page };
 
   const { data, isLoading } = useQuery({
     queryKey: ['houses', queryFilters],
@@ -50,11 +51,12 @@ export default function PropertiesPage() {
   const clearFilters = () => {
     setFilters({ sort: 'newest', page: 1, limit: 12 });
     setSearch('');
+    setStatusTab('approved');
     setPage(1);
   };
 
   const hasActiveFilters = !!(filters.minPrice || filters.maxPrice || filters.bedrooms ||
-    filters.bathrooms || filters.propertyType || filters.city || search);
+    filters.bathrooms || filters.propertyType || filters.city || search || statusTab !== 'approved');
 
   return (
     <div className="min-h-screen bg-background pt-20">
@@ -67,6 +69,40 @@ export default function PropertiesPage() {
           <p className="text-muted-foreground text-sm mt-1">
             {pagination ? `${pagination.total.toLocaleString()} properties found` : 'Loading...'}
           </p>
+        </div>
+
+        {/* Status / Availability tabs */}
+        <div className="flex items-center gap-2 mb-6 p-1.5 rounded-2xl bg-muted/60 max-w-fit border border-border">
+          <button
+            onClick={() => { setStatusTab('approved'); setPage(1); }}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+              statusTab === 'approved'
+                ? 'bg-white shadow-sm text-foreground'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            Available Properties
+          </button>
+          <button
+            onClick={() => { setStatusTab('rented'); setPage(1); }}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+              statusTab === 'rented'
+                ? 'bg-purple-600 text-white shadow-sm'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            Rented Properties
+          </button>
+          <button
+            onClick={() => { setStatusTab('all'); setPage(1); }}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+              statusTab === 'all'
+                ? 'bg-white shadow-sm text-foreground'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            All Listings
+          </button>
         </div>
 
         {/* Search + Filter bar */}
@@ -109,7 +145,7 @@ export default function PropertiesPage() {
             className="mb-6 p-6 rounded-2xl border-2 border-border bg-background grid grid-cols-2 md:grid-cols-4 gap-4">
             <div>
               <label className="block text-xs font-semibold text-muted-foreground mb-1.5 uppercase tracking-wide">City</label>
-              <input type="text" placeholder="e.g. Nairobi"
+              <input type="text" placeholder="e.g. Bole, Addis Ababa"
                 value={filters.city || ''}
                 onChange={(e) => updateFilter('city', e.target.value || undefined)}
                 className="w-full px-3 py-2 border border-border rounded-lg text-sm focus:outline-none focus:border-amber-500" />

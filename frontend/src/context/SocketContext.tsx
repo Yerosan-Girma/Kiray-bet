@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { io, Socket } from 'socket.io-client';
+import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from './AuthContext';
 import { getToken } from '../api/axios';
 
@@ -14,26 +15,16 @@ const SOCKET_URL = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://
 
 export function SocketProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [socket, setSocket] = useState<Socket | null>(null);
   const [connected, setConnected] = useState(false);
 
   useEffect(() => {
-    if (!user) {
-      // Clean up existing socket when user logs out
-      setSocket((prev) => {
-        prev?.close();
-        return null;
-      });
-      setConnected(false);
-      return;
-    }
-
     const token = getToken();
-    if (!token) return;
 
     const newSocket = io(SOCKET_URL, {
       withCredentials: true,
-      auth: { token }, // Backend reads socket.handshake.auth.token
+      auth: { token: token || '' },
       reconnection: true,
       reconnectionAttempts: 5,
       reconnectionDelay: 1000,
@@ -46,12 +37,25 @@ export function SocketProvider({ children }: { children: ReactNode }) {
       setConnected(false);
     });
 
+    // Automatically invalidate React Query cache when properties change live
+    newSocket.on('property_rented', () => {
+      queryClient.invalidateQueries({ queryKey: ['houses'] });
+      queryClient.invalidateQueries({ queryKey: ['house'] });
+      queryClient.invalidateQueries({ queryKey: ['myListings'] });
+    });
+
+    newSocket.on('house_status_changed', () => {
+      queryClient.invalidateQueries({ queryKey: ['houses'] });
+      queryClient.invalidateQueries({ queryKey: ['house'] });
+      queryClient.invalidateQueries({ queryKey: ['myListings'] });
+    });
+
     setSocket(newSocket);
 
     return () => {
       newSocket.close();
     };
-  }, [user]);
+  }, [user, queryClient]);
 
   return (
     <SocketContext.Provider value={{ socket, connected }}>

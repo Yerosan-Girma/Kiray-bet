@@ -1,4 +1,4 @@
-﻿const User = require('../models/User');
+const User = require('../models/User');
 const House = require('../models/House');
 const Transaction = require('../models/Transaction');
 const AuditLog = require('../models/AuditLog');
@@ -90,6 +90,9 @@ const getUsers = async (filters = {}, page = 1, limit = 10) => {
 const approveUser = async (adminId, userId, targetType = 'user') => {
   const user = await User.findById(userId);
   if (!user) throw new AppError('User not found', 404);
+  if (user.role === 'broker' && user.brokerApplicationStatus !== 'approved') {
+    throw new AppError('Brokers must pay the 500 ETB fee and be approved via the Broker Applications section', 400);
+  }
   user.isApproved = true;
   await user.save();
 
@@ -142,7 +145,7 @@ const suspendUser = async (adminId, userId, reason, expiryDate) => {
           <p><strong>Reason:</strong> ${reason}</p>
           ${expiryDate ? `<p><strong>Suspension expires:</strong> ${new Date(expiryDate).toLocaleDateString()}</p>` : ''}
           <p>If you believe this is an error, please contact our support team.</p>
-          <p style="color: #666; font-size: 12px;">This is an automated email from RentalWPA.</p>
+          <p style="color: #666; font-size: 12px;">This is an automated email from Kiray Bet.</p>
         </div>
       `,
     });
@@ -189,7 +192,7 @@ const banUser = async (adminId, userId) => {
           <p>Your account has been permanently banned due to a serious violation of our terms of service.</p>
           <p>You will no longer be able to access your account or use our platform.</p>
           <p>If you believe this is an error, please contact our support team.</p>
-          <p style="color: #666; font-size: 12px;">This is an automated email from RentalWPA.</p>
+          <p style="color: #666; font-size: 12px;">This is an automated email from Kiray Bet.</p>
         </div>
       `,
     });
@@ -236,7 +239,7 @@ const restoreUser = async (adminId, userId) => {
           <h2 style="color: #C9922A;">Account Restored</h2>
           <p>Hello ${user.name},</p>
           <p>Your account has been restored and is now active. You can log in and use the platform normally.</p>
-          <p style="color: #666; font-size: 12px;">This is an automated email from RentalWPA.</p>
+          <p style="color: #666; font-size: 12px;">This is an automated email from Kiray Bet.</p>
         </div>
       `,
     });
@@ -321,7 +324,7 @@ const approveListing = async (adminId, listingId) => {
             <h2 style="color: #C9922A;">Listing Approved</h2>
             <p>Hello ${broker.name},</p>
             <p>Your listing <strong>"${house.title}"</strong> has been approved by the admin and is now live on the platform.</p>
-            <p style="color: #666; font-size: 12px;">This is an automated email from RentalWPA.</p>
+            <p style="color: #666; font-size: 12px;">This is an automated email from Kiray Bet.</p>
           </div>
         `,
       });
@@ -382,7 +385,7 @@ const rejectListing = async (adminId, listingId, reason) => {
             <p>Your listing <strong>"${house.title}"</strong> has been rejected by the admin.</p>
             <p><strong>Reason:</strong> ${reason}</p>
             <p>You may edit and resubmit the listing after addressing the feedback provided.</p>
-            <p style="color: #666; font-size: 12px;">This is an automated email from RentalWPA.</p>
+            <p style="color: #666; font-size: 12px;">This is an automated email from Kiray Bet.</p>
           </div>
         `,
       });
@@ -493,6 +496,15 @@ const approveBroker = async (adminId, brokerId) => {
     throw new AppError('No pending application found', 400);
   }
 
+  const paidTx = await Transaction.findOne({
+    userId: brokerId,
+    type: 'broker_registration',
+    status: 'success',
+  });
+  if (!paidTx) {
+    throw new AppError('Cannot approve broker: Payment of 500 ETB registration fee has not been confirmed.', 400);
+  }
+
   const previousRole = broker.role;
   broker.role = 'broker';
   broker.isApproved = true;
@@ -525,7 +537,7 @@ const approveBroker = async (adminId, brokerId) => {
           <h2 style="color: #C9922A;">Broker Application Approved</h2>
           <p>Hello ${broker.name},</p>
           <p>Your broker application has been approved. You can now access the Broker Dashboard.</p>
-          <p style="color: #666; font-size: 12px;">This is an automated email from RentalWPA.</p>
+          <p style="color: #666; font-size: 12px;">This is an automated email from Kiray Bet.</p>
         </div>
       `,
     });
@@ -571,7 +583,7 @@ const rejectBroker = async (adminId, brokerId, reason) => {
           <p>Hello ${broker.name},</p>
           <p>Your broker application was rejected.</p>
           <p><strong>Reason:</strong> ${reason || 'Application did not meet requirements'}</p>
-          <p style="color: #666; font-size: 12px;">This is an automated email from RentalWPA.</p>
+          <p style="color: #666; font-size: 12px;">This is an automated email from Kiray Bet.</p>
         </div>
       `,
     });

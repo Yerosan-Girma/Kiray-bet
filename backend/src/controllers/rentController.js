@@ -1,6 +1,20 @@
 const rentService = require('../services/rentService');
 const { catchAsync } = require('../utils/AppError');
 
+// ── Search tenant by email (Broker / Admin only) ─────────────────────────────
+exports.searchTenant = catchAsync(async (req, res) => {
+  const { email } = req.query;
+  const tenant = await rentService.searchTenant(email);
+  res.json({ success: true, data: tenant });
+});
+
+// ── Get inquirers for a house (Broker / Admin only) ──────────────────────────
+exports.getHouseInquirers = catchAsync(async (req, res) => {
+  const { houseId } = req.params;
+  const inquirers = await rentService.getHouseInquirers(houseId);
+  res.json({ success: true, data: inquirers });
+});
+
 // ── Create rental agreement (Broker only) ───────────────────────────────────
 exports.createRentalAgreement = catchAsync(async (req, res) => {
   const { houseId, tenantId, ...rentalData } = req.body;
@@ -19,8 +33,8 @@ exports.getMyRentals = catchAsync(async (req, res) => {
   const result = await rentService.getRentalsForUser(
     req.user.id,
     req.user.role,
-    parseInt(page),
-    parseInt(limit)
+    parseInt(page, 10),
+    parseInt(limit, 10)
   );
   res.json({ success: true, data: result.rentals, pagination: result.pagination });
 });

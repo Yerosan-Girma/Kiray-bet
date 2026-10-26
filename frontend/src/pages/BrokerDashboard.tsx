@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'motion/react';
 import {
@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { brokerService } from '../services/broker.service';
 import { houseService } from '../services/house.service';
+import { rentService } from '../services/rent.service';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'sonner';
 import { Link, Navigate } from 'react-router';
@@ -23,31 +24,40 @@ function TenantFormModal({ house, onClose, onSubmit }: {
 }) {
   const [form, setForm] = useState({ email: '' });
   const [loading, setLoading] = useState(false);
+  const [inquirers, setInquirers] = useState<any[]>([]);
+  const [loadingInquirers, setLoadingInquirers] = useState(true);
+
+  useEffect(() => {
+    let mounted = true;
+    rentService.getHouseInquirers(house._id)
+      .then((res: any) => {
+        if (mounted && res?.data) {
+          setInquirers(res.data);
+        }
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (mounted) setLoadingInquirers(false);
+      });
+    return () => { mounted = false; };
+  }, [house._id]);
 
   const handleSubmit = async () => {
-    if (!form.email) {
+    if (!form.email.trim()) {
       toast.error('Please enter tenant email');
       return;
     }
 
     setLoading(true);
     try {
-      // Search for user by email
-      const token = localStorage.getItem('nesthub_token') || sessionStorage.getItem('nesthub_token') || '';
-      const response = await fetch(
-        `${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/admin/users?search=${form.email}&limit=1`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      const data = await response.json();
-
-      if (data.success && data.data.length > 0) {
-        const tenant = data.data[0];
-        onSubmit(tenant);
+      const res = await rentService.searchTenant(form.email.trim());
+      if (res?.data) {
+        onSubmit(res.data);
       } else {
         toast.error('User not found. The tenant must be registered on the platform.');
       }
-    } catch (err) {
-      toast.error('Failed to find tenant');
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'User not found. The tenant must be registered on the platform.');
     } finally {
       setLoading(false);
     }
@@ -59,22 +69,53 @@ function TenantFormModal({ house, onClose, onSubmit }: {
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.95 }}
-        className="w-full max-w-md rounded-3xl bg-white shadow-2xl p-6"
+        className="w-full max-w-lg rounded-3xl bg-white shadow-2xl p-6 max-h-[90vh] overflow-y-auto"
       >
-        <h2 className="font-bold text-foreground text-xl mb-4">Select Tenant</h2>
-        <p className="text-sm text-muted-foreground mb-6">
-          {house.title} · ETB {house.price?.toLocaleString()}/mo
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="font-bold text-foreground text-xl">Select Tenant for Rental Agreement</h2>
+          <button onClick={onClose} className="p-2 hover:bg-muted rounded-xl transition-colors">
+            <X className="w-5 h-5 text-muted-foreground" />
+          </button>
+        </div>
+        <p className="text-sm text-muted-foreground mb-4">
+          {house.title} · <span className="font-semibold text-foreground">ETB {house.price?.toLocaleString()}/mo</span>
         </p>
+
+        {/* Inquirers list */}
+        {loadingInquirers ? (
+          <div className="py-4 text-center text-xs text-muted-foreground">Checking property inquirers...</div>
+        ) : inquirers.length > 0 ? (
+          <div className="mb-6 p-4 rounded-2xl bg-amber-50/60 border border-amber-200">
+            <p className="text-xs font-bold text-amber-900 uppercase tracking-wide mb-2 flex items-center gap-1.5">
+              <Users className="w-3.5 h-3.5" /> Renters Who Inquired About This House
+            </p>
+            <div className="space-y-2 mt-2">
+              {inquirers.map((inq) => (
+                <div key={inq._id} className="flex items-center justify-between p-2.5 rounded-xl bg-white border border-amber-200/80">
+                  <div className="min-w-0 mr-2">
+                    <p className="font-semibold text-foreground text-sm truncate">{inq.name}</p>
+                    <p className="text-xs text-muted-foreground truncate">{inq.email} {inq.phone ? `· ${inq.phone}` : ''}</p>
+                  </div>
+                  <button
+                    onClick={() => onSubmit(inq)}
+                    className="shrink-0 px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold transition-colors">
+                    Select
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : null}
 
         <div className="p-4 rounded-2xl bg-blue-50 border border-blue-200 mb-6">
           <p className="text-xs text-blue-800">
-            Enter the tenant's email address. The tenant must be registered on the platform.
+            Enter the tenant's email address to search any registered renter on the platform.
           </p>
         </div>
 
         <div>
           <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1.5">
-            Tenant Email *
+            Search Tenant by Email *
           </label>
           <input
             type="email"
@@ -99,7 +140,7 @@ function TenantFormModal({ house, onClose, onSubmit }: {
             className="flex-1 py-3 rounded-xl font-bold text-sm transition-all hover:scale-[1.02] disabled:opacity-50"
             style={{ background: 'linear-gradient(135deg, #E8B84B, #C9922A)', color: '#070C17' }}
           >
-            {loading ? 'Searching...' : 'Select Tenant'}
+            {loading ? 'Searching...' : 'Find & Select Tenant'}
           </button>
         </div>
       </motion.div>
@@ -133,11 +174,12 @@ function StatusBadge({ status }: { status: string }) {
 }
 
 // ── Property Detail Modal — full read-only preview before publishing ───────
-function PropertyDetailModal({ house, onClose, onPublish, onEdit }: {
+function PropertyDetailModal({ house, onClose, onPublish, onEdit, onCreateAgreement }: {
   house: House;
   onClose: () => void;
   onPublish?: () => void;
   onEdit?: () => void;
+  onCreateAgreement?: () => void;
 }) {
   const [imgIdx, setImgIdx] = useState(0);
   const owner = typeof house.ownerId === 'object' ? house.ownerId as any : null;
@@ -294,6 +336,12 @@ function PropertyDetailModal({ house, onClose, onPublish, onEdit }: {
                 className="flex-1 py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all hover:scale-[1.02]"
                 style={{ background: 'linear-gradient(135deg, #E8B84B, #C9922A)', color: '#070C17' }}>
                 <Globe className="w-4 h-4" /> Publish to Website
+              </button>
+            )}
+            {isPublished && house.status !== 'rented' && onCreateAgreement && (
+              <button onClick={onCreateAgreement}
+                className="flex-1 py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all hover:scale-[1.02] bg-purple-600 text-white hover:bg-purple-700">
+                <FileText className="w-4 h-4" /> Create Rental Agreement
               </button>
             )}
           </div>
@@ -479,6 +527,7 @@ export default function BrokerDashboard() {
   const [viewHouse, setViewHouse] = useState<House | null>(null);
   const [listingSearch, setListingSearch] = useState('');
   const [rentalHouse, setRentalHouse] = useState<House | null>(null);
+  const [rentalTenant, setRentalTenant] = useState<any | null>(null);
   const [showRentalForm, setShowRentalForm] = useState(false);
 
   if (user?.role !== 'broker') return <Navigate to="/broker/pending" replace />;
@@ -991,6 +1040,11 @@ export default function BrokerDashboard() {
             onClose={() => setViewHouse(null)}
             onPublish={() => publishMutation.mutate(viewHouse._id)}
             onEdit={() => { setEditHouse(viewHouse); setViewHouse(null); }}
+            onCreateAgreement={() => {
+              setRentalHouse(viewHouse);
+              setShowRentalForm(true);
+              setViewHouse(null);
+            }}
           />
         )}
         {rentalHouse && showRentalForm && (
@@ -1013,6 +1067,8 @@ export default function BrokerDashboard() {
               setRentalTenant(null);
               queryClient.invalidateQueries({ queryKey: ['myListings'] });
               queryClient.invalidateQueries({ queryKey: ['brokerSubmissions'] });
+              queryClient.invalidateQueries({ queryKey: ['houses'] });
+              queryClient.invalidateQueries({ queryKey: ['house'] });
             }}
           />
         )}

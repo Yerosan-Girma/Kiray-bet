@@ -1,5 +1,6 @@
 const Rent = require('../models/Rent');
 const House = require('../models/House');
+const Inquiry = require('../models/Inquiry');
 const User = require('../models/User');
 const Notification = require('../models/Notification');
 const AuditLog = require('../models/AuditLog');
@@ -86,6 +87,20 @@ const createRentalAgreement = async (brokerId, houseId, tenantId, rentalData) =>
   });
   io.to(`user_${owner._id}`).emit('notification', ownerNotification);
 
+  // Broadcast house status update to all connected users and site visitors
+  io.emit('property_rented', {
+    houseId: house._id.toString(),
+    status: 'rented',
+    isActive: false,
+    title: house.title,
+  });
+  io.emit('house_status_changed', {
+    houseId: house._id.toString(),
+    status: 'rented',
+    isActive: false,
+    title: house.title,
+  });
+
   // Send email to owner
   try {
     await sendEmail({
@@ -106,7 +121,7 @@ const createRentalAgreement = async (brokerId, houseId, tenantId, rentalData) =>
             <li>Security Deposit: ETB ${rent.securityDeposit.toLocaleString()}</li>
           </ul>
           <p>The broker has created a rental agreement. You can view the details in your dashboard.</p>
-          <p style="color: #666; font-size: 12px;">This is an automated email from RentalWPA.</p>
+          <p style="color: #666; font-size: 12px;">This is an automated email from Kiray Bet.</p>
         </div>
       `,
     });
@@ -149,7 +164,7 @@ const createRentalAgreement = async (brokerId, houseId, tenantId, rentalData) =>
             <li>Payment Method: ${rent.paymentMethod}</li>
           </ul>
           <p>Please contact the broker for payment instructions and lease agreement document.</p>
-          <p style="color: #666; font-size: 12px;">This is an automated email from RentalWPA.</p>
+          <p style="color: #666; font-size: 12px;">This is an automated email from Kiray Bet.</p>
         </div>
       `,
     });
@@ -260,6 +275,16 @@ const updateRentalStatus = async (rentId, userId, role, status, terminationReaso
       house.status = 'approved';
       house.isActive = true;
       await house.save();
+
+      const io = getIO();
+      if (io) {
+        io.emit('house_status_changed', {
+          houseId: house._id.toString(),
+          status: 'approved',
+          isActive: true,
+          title: house.title,
+        });
+      }
     }
   }
 
@@ -325,7 +350,50 @@ const addPaymentRecord = async (rentId, userId, role, paymentData) => {
   return rent;
 };
 
+
+// ── Search tenant by email (for broker / admin creating agreement) ─────────
+const searchTenant = async (email) => {
+  if (!email || !email.trim()) {
+    throw new AppError('Please provide an email to search for a tenant', 400);
+  }
+  const tenant = await User.findOne({
+    email: email.trim().toLowerCase(),
+    status: 'active',
+  }).select('_id name email phone role profileImage');
+
+  if (!tenant) {
+    throw new AppError('No registered user found with that email address', 404);
+  }
+  return tenant;
+};
+
+// ── Get inquirers for a house (so broker can select from actual inquirers) ───
+const getHouseInquirers = async (houseId) => {
+  const inquiries = await Inquiry.find({ houseId })
+    .populate('userId', '_id name email phone profileImage')
+    .sort({ createdAt: -1 })
+    .lean();
+
+  const seen = new Set();
+  const inquirers = [];
+  for (const inq of inquiries) {
+    if (inq.userId && inq.userId._id && !seen.has(inq.userId._id.toString())) {
+      seen.add(inq.userId._id.toString());
+      inquirers.push({
+        _id: inq.userId._id,
+        name: inq.userId.name,
+        email: inq.userId.email,
+        phone: inq.userId.phone || inq.contactPhone || '',
+        profileImage: inq.userId.profileImage || '',
+      });
+    }
+  }
+  return inquirers;
+};
+
 module.exports = {
+  searchTenant,
+  getHouseInquirers,
   createRentalAgreement,
   getRentalsForUser,
   getRentalById,

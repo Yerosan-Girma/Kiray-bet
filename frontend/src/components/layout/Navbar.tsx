@@ -10,7 +10,7 @@ const NAV_LINKS = [
   { label: "Properties",   hash: "properties",  href: "/#properties"  },
   { label: "Locations",    hash: "locations",   href: "/#locations"   },
   { label: "How It Works", hash: "how-it-works",href: "/#how-it-works"},
-  { label: "About",        hash: "about",       href: "/#about"       },
+  { label: "About",        hash: null,          href: "/about"        },
   { label: "Contact",      hash: null,          href: "/contact"      },
 ];
 
@@ -64,6 +64,7 @@ export default function Navbar() {
 
   const isActive = (link: typeof NAV_LINKS[0]) => {
     if (link.href === "/contact") return location.pathname === "/contact";
+    if (link.href === "/about") return location.pathname === "/about";
     return location.pathname === "/" && activeHash === link.hash;
   };
 
@@ -78,15 +79,20 @@ export default function Navbar() {
         <div className="max-w-7xl mx-auto px-6 h-18 flex items-center justify-between py-4">
           {/* Logo */}
           <Link to="/" onClick={() => { if (location.pathname === '/') window.scrollTo({ top: 0, behavior: "smooth" }); }}
-            className="flex items-center gap-2.5 group">
-            <div className="w-9 h-9 rounded-xl flex items-center justify-center relative overflow-hidden"
+            className="flex items-center gap-3 group">
+            <div className="w-10 h-10 rounded-2xl flex items-center justify-center relative overflow-hidden shadow-lg shadow-amber-500/20"
               style={{ background: "linear-gradient(135deg, #E8B84B 0%, #C9922A 100%)" }}>
-              <Home className="w-4.5 h-4.5 text-[#070C17] relative z-10" style={{ width: 18, height: 18 }} />
+              <Home className="w-5 h-5 text-[#070C17] relative z-10" />
               <div className="absolute inset-0 opacity-0 group-hover:opacity-20 bg-white transition-opacity" />
             </div>
-            <span className="text-white font-bold text-xl tracking-tight" style={{ fontFamily: "Urbanist, Outfit, sans-serif" }}>
-              Nest<span style={{ color: "#E8B84B" }}>Hub</span>
-            </span>
+            <div className="flex flex-col">
+              <span className="text-white font-black text-2xl tracking-tight leading-none" style={{ fontFamily: "Urbanist, Outfit, sans-serif" }}>
+                Kiray<span style={{ color: "#E8B84B" }}>Bet</span>
+              </span>
+              <span className="text-[10px] font-bold text-white/50 tracking-wider uppercase mt-0.5">
+                ኪራይ ቤት · Ethiopia
+              </span>
+            </div>
           </Link>
 
           {/* Desktop nav */}
@@ -127,10 +133,28 @@ export default function Navbar() {
             {user ? (
               <>
                 <NotificationCenter />
-                {user.role !== 'renter' && (
-                  <Link to={`/${user.role}`} className="text-sm font-medium text-white/80 hover:text-white transition-colors px-4 py-2">
-                    Dashboard
+                {user.role === 'admin' && (
+                  <Link to="/admin" className="text-sm font-medium text-white/80 hover:text-white transition-colors px-3 py-2">
+                    Admin Panel
                   </Link>
+                )}
+                {user.role === 'broker' && (
+                  <Link to={(user as any).isApproved ? "/broker" : "/broker/pending"} className="text-sm font-medium text-amber-400 hover:text-amber-300 transition-colors px-3 py-2">
+                    Broker Dashboard
+                  </Link>
+                )}
+                {(user.role === 'owner' || user.role === 'renter') && (
+                  <>
+                    <Link to="/owner" className="text-sm font-semibold px-4 py-2 rounded-xl transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 active:scale-95"
+                      style={{ background: "linear-gradient(135deg, #E8B84B 0%, #C9922A 100%)", color: "#070C17" }}>
+                      List Property
+                    </Link>
+                    {(user as any).brokerApplicationStatus !== 'approved' && (
+                      <Link to="/broker/apply" className="text-sm font-medium text-amber-400 hover:text-amber-300 transition-colors px-3 py-2">
+                        Become a Broker
+                      </Link>
+                    )}
+                  </>
                 )}
                 <Link to="/profile" className="w-9 h-9 rounded-xl bg-amber-500/20 flex items-center justify-center hover:bg-amber-500/30 transition-colors"
                   title={user.name}>
@@ -138,7 +162,7 @@ export default function Navbar() {
                     ? <img src={user.profileImage} alt="" className="w-full h-full rounded-xl object-cover" />
                     : <User className="w-4 h-4 text-amber-400" />}
                 </Link>
-                <button onClick={logout} className="text-sm font-medium text-red-400 hover:text-red-300 transition-colors px-4 py-2">
+                <button onClick={logout} className="text-sm font-medium text-red-400 hover:text-red-300 transition-colors px-3 py-2">
                   Logout
                 </button>
               </>
@@ -196,11 +220,29 @@ export default function Navbar() {
                 <div className="flex flex-col gap-3 pt-4 mt-2 border-t border-white/10">
                   {user ? (
                     <>
-                      {user.role !== 'renter' && (
-                        <Link to={`/${user.role}`} onClick={() => setOpen(false)} className="text-white/80 hover:text-white font-medium py-2 text-left px-3 rounded-xl hover:bg-white/6 transition-all">
-                          Dashboard
+                      {user.role === 'admin' && (
+                        <Link to="/admin" onClick={() => setOpen(false)} className="text-white/80 hover:text-white font-medium py-2 text-left px-3 rounded-xl hover:bg-white/6 transition-all">
+                          Admin Panel
                         </Link>
                       )}
+                      {user.role === 'broker' && (
+                        <Link to={(user as any).isApproved ? "/broker" : "/broker/pending"} onClick={() => setOpen(false)} className="text-amber-400 hover:text-amber-300 font-medium py-2 text-left px-3 rounded-xl hover:bg-white/6 transition-all">
+                          Broker Dashboard
+                        </Link>
+                      )}
+                      {(user.role === 'owner' || user.role === 'renter') && (
+                        <>
+                          <Link to="/owner" onClick={() => setOpen(false)} className="text-white/80 hover:text-white font-medium py-2 text-left px-3 rounded-xl hover:bg-white/6 transition-all">
+                            List Property
+                          </Link>
+                          <Link to="/broker/apply" onClick={() => setOpen(false)} className="text-amber-400 hover:text-amber-300 font-medium py-2 text-left px-3 rounded-xl hover:bg-white/6 transition-all">
+                            Become a Broker
+                          </Link>
+                        </>
+                      )}
+                      <Link to="/profile" onClick={() => setOpen(false)} className="text-white/80 hover:text-white font-medium py-2 text-left px-3 rounded-xl hover:bg-white/6 transition-all">
+                        My Profile
+                      </Link>
                       <button onClick={() => { logout(); setOpen(false); }} className="text-red-400 font-medium py-2 text-left px-3 rounded-xl hover:bg-white/6 transition-all">
                         Logout
                       </button>
@@ -245,7 +287,7 @@ export default function Navbar() {
               </div>
               <div className="p-6">
                 <div className="space-y-4">
-                  <p className="text-sm text-white/50 leading-relaxed">Join 1,200+ landlords and brokers already earning on NestHub. List your property in minutes.</p>
+                  <p className="text-sm text-white/50 leading-relaxed">Join 1,200+ landlords and brokers already earning on Kiray Bet. List your property in minutes.</p>
                   <div className="space-y-2">
                     {["Free to list — no upfront fees","Reach 48,000+ verified tenants","Dashboard analytics & chat"].map(f => (
                       <div key={f} className="flex items-center gap-2 text-sm text-white/70">

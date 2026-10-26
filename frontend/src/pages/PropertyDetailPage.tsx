@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import {
   MapPin, Bed, Bath, Square, Heart, Share2, Eye, MessageSquare,
   ChevronLeft, ChevronRight, X, Phone, Award, CheckCircle, ArrowLeft,
-  Wifi, Car, Waves, Dumbbell, Trees, Shield, Star, Send,
+  Wifi, Car, Waves, Dumbbell, Trees, Shield, Star, Send, Key,
 } from 'lucide-react';
 import { houseService } from '../services/house.service';
 import { favoriteService } from '../services/favorite.service';
@@ -204,6 +204,19 @@ export default function PropertyDetailPage() {
         <div className="grid lg:grid-cols-3 gap-8">
           {/* Left — main content */}
           <div className="lg:col-span-2 space-y-8">
+            {house.status === 'rented' && (
+              <div className="p-4 rounded-2xl bg-purple-50 border-2 border-purple-200 flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-purple-100 flex items-center justify-center shrink-0">
+                  <Key className="w-5 h-5 text-purple-600" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-purple-900 text-base">This Property Has Been Rented</h3>
+                  <p className="text-xs text-purple-700 mt-0.5">
+                    A formal lease agreement is in effect for this property. It is currently off the market and no longer accepting inquiries.
+                  </p>
+                </div>
+              </div>
+            )}
             <ImageGallery images={house.images} title={house.title} />
 
             {/* Title + badges */}
@@ -221,9 +234,9 @@ export default function PropertyDetailPage() {
                       {house.propertyType}
                     </span>
                     <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                      house.status === 'approved' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
+                      house.status === 'rented' ? 'bg-purple-100 text-purple-700 border border-purple-300 font-bold uppercase tracking-wider' : house.status === 'approved' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
                     }`}>
-                      {house.status}
+                      {house.status === 'rented' ? '🔒 Rented' : house.status}
                     </span>
                   </div>
                   <h1 className="text-2xl md:text-3xl font-black text-foreground" style={{ fontFamily: 'Urbanist, sans-serif' }}>
@@ -355,7 +368,25 @@ export default function PropertyDetailPage() {
             )}
 
             {/* Inquiry form */}
-            <InquiryForm house={house} />
+            {house.status === 'rented' ? (
+              <div className="bg-white rounded-3xl border-2 border-purple-200 shadow-sm p-6 text-center">
+                <div className="w-14 h-14 rounded-2xl bg-purple-100 text-purple-700 flex items-center justify-center mx-auto mb-3">
+                  <Key className="w-7 h-7" />
+                </div>
+                <h3 className="font-bold text-foreground text-lg">Property is Rented</h3>
+                <p className="text-xs text-muted-foreground mt-2 leading-relaxed">
+                  This property has already been leased to a tenant and is not accepting inquiries at this time.
+                </p>
+                <button
+                  onClick={() => navigate('/properties')}
+                  className="mt-5 w-full py-3 rounded-xl font-bold text-sm bg-purple-600 hover:bg-purple-700 text-white transition-colors"
+                >
+                  Browse Available Properties
+                </button>
+              </div>
+            ) : (
+              <InquiryForm house={house} />
+            )}
           </div>
         </div>
       </div>

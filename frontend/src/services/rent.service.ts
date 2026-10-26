@@ -1,6 +1,18 @@
 import api from '../api/axios';
 
 export const rentService = {
+  // Search registered tenant by email (for broker / admin)
+  searchTenant: async (email: string) => {
+    const response = await api.get('/rentals/search-tenant', { params: { email } });
+    return response.data; // { success: true, data: User }
+  },
+
+  // Get users who submitted inquiries for a house
+  getHouseInquirers: async (houseId: string) => {
+    const response = await api.get(`/rentals/house-inquiries/${houseId}`);
+    return response.data; // { success: true, data: User[] }
+  },
+
   // Broker: Create rental agreement
   createRentalAgreement: async (data: {
     houseId: string;

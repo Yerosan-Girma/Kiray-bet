@@ -10,7 +10,7 @@ const { sendEmail } = require('./emailService');
 const idOf = (value) => value?._id?.toString?.() || value?.toString?.();
 
 const requireActiveApprovedBroker = async (userOrId) => {
-  const user = typeof userOrId === 'object'
+  const user = (userOrId && typeof userOrId === 'object' && userOrId.role)
     ? userOrId
     : await User.findById(userOrId).select('-password -refreshToken');
 
@@ -193,7 +193,7 @@ const updateHouse = async (houseId, updateData, userId, role) => {
                 <li>Property Type: ${house.propertyType}</li>
               </ul>
               <p>Potential renters can now contact the assigned broker for inquiries.</p>
-              <p style="color: #666; font-size: 12px;">This is an automated email from RentalWPA.</p>
+              <p style="color: #666; font-size: 12px;">This is an automated email from Kiray Bet.</p>
             </div>
           `,
         });
@@ -242,8 +242,18 @@ const deleteHouse = async (houseId, userId, role) => {
   return house;
 };
 
-const getHouses = async (filters, page = 1, limit = 10) => {
-  const query = { isActive: true, status: 'approved' };
+const getHouses = async (filters = {}, page = 1, limit = 10) => {
+  let query = {};
+
+  if (filters.status === 'rented') {
+    query.status = 'rented';
+  } else if (filters.status === 'all') {
+    query.status = { $in: ['approved', 'rented'] };
+  } else {
+    // Default: only available (active, approved) properties
+    query.status = 'approved';
+    query.isActive = true;
+  }
 
   if (filters.search) {
     query.$text = { $search: filters.search };

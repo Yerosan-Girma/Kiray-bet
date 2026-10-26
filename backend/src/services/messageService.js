@@ -341,7 +341,7 @@ const sendMessage = async (senderId, receiverId, content, houseId = null, conver
           <p><strong>Message:</strong></p>
           <p style="background: #f5f5f5; padding: 15px; border-radius: 5px;">${content.trim()}</p>
           <p>Please continue the conversation in your dashboard.</p>
-          <p style="color: #666; font-size: 12px;">This is an automated email from RentalWPA.</p>
+          <p style="color: #666; font-size: 12px;">This is an automated email from Kiray Bet.</p>
         </div>
       `,
     });

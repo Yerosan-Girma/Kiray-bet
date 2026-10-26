@@ -1,3 +1,4 @@
+import { toast } from 'sonner';
 import { useState, useRef, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'motion/react';
@@ -14,6 +15,15 @@ const TYPE_ICONS: Record<string, string> = {
   listing_rejected: '❌',
   premium_activated: '⭐',
   listing_flagged: '🚩',
+  property_rented: '🔑',
+  rental_agreement_created: '📝',
+  broker_application_received: '💼',
+  broker_approved: '🎉',
+  broker_rejected: '⚠️',
+  payment_confirmed: '💳',
+  new_owner_submission: '🏠',
+  owner_submission_accepted: '🤝',
+  owner_submission_rejected: '❌',
 };
 
 export default function NotificationCenter() {
@@ -37,8 +47,11 @@ export default function NotificationCenter() {
   // Listen for real-time notifications via socket
   useEffect(() => {
     if (!socket) return;
-    socket.on('notification', () => {
+    socket.on('notification', (notif: any) => {
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      if (notif?.message) {
+        toast.info(notif.message, { duration: 6000 });
+      }
     });
     return () => { socket.off('notification'); };
   }, [socket, queryClient]);

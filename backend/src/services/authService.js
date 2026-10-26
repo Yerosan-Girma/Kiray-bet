@@ -30,13 +30,15 @@ const register = async (userData) => {
     throw new AppError('User already exists', 400);
   }
 
-  // Create user (default role renter)
+  // Create user: prevent direct registration as broker/admin
+  // To become a broker, applicants must pay 500 ETB registration fee and be approved
+  const assignedRole = role === 'owner' ? 'owner' : 'renter';
   const user = await User.create({
     name,
     email,
     phone,
     password,
-    role: role || 'renter',
+    role: assignedRole,
   });
 
   // Generate email verification token (for simplicity we use jwt)

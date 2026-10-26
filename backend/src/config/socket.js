@@ -11,7 +11,10 @@ const onlineUsers = new Map();
 const initSocket = (server) => {
   io = new Server(server, {
     cors: {
-      origin: process.env.CLIENT_URL,
+      origin: (origin, callback) => {
+        // Allow requests with no origin or any local dev frontend
+        callback(null, true);
+      },
       credentials: true,
     },
   });
@@ -19,25 +22,36 @@ const initSocket = (server) => {
   io.use(async (socket, next) => {
     try {
       const token = socket.handshake.auth.token;
-      if (!token) return next(new Error('Authentication error'));
+      if (!token) {
+        socket.user = null;
+        return next();
+      }
 
       const decoded = jwt.verify(token, process.env.JWT_ACCESS_SECRET);
       const user = await User.findById(decoded.id).select('-password -refreshToken');
-      if (!user) return next(new Error('User not found'));
+      if (!user) {
+        socket.user = null;
+        return next();
+      }
 
       socket.user = user;
       next();
     } catch (err) {
-      next(new Error('Invalid token'));
+      socket.user = null;
+      next();
     }
   });
 
   io.on('connection', (socket) => {
-    logger.info(`User ${socket.user.email} connected`);
-    const socketUserId = socket.user.id;
-    onlineUsers.set(socketUserId, (onlineUsers.get(socketUserId) || 0) + 1);
-    socket.join(`user_${socketUserId}`);
-    io.emit('user-online', { userId: socketUserId });
+    if (socket.user) {
+      logger.info(`User ${socket.user.email} connected`);
+      const socketUserId = socket.user.id;
+      onlineUsers.set(socketUserId, (onlineUsers.get(socketUserId) || 0) + 1);
+      socket.join(`user_${socketUserId}`);
+      io.emit('user-online', { userId: socketUserId });
+    } else {
+      logger.info('Anonymous visitor connected to socket for public updates');
+    }
 
     // Join a room based on inquiry ID
     socket.on('join-inquiry', (inquiryId) => {
@@ -160,8 +174,17 @@ const initSocket = (server) => {
   return io;
 };
 
+const dummyIO = {
+  to: () => dummyIO,
+  in: () => dummyIO,
+  emit: () => {},
+};
+
 const getIO = () => {
-  if (!io) throw new Error('Socket.io not initialized');
+  if (!io) {
+    logger.warn('Socket.io not initialized; returning mock socket broadcaster');
+    return dummyIO;
+  }
   return io;
 };
 

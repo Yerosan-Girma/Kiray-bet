@@ -67,7 +67,7 @@ export function LoginPage() {
               Welcome Back
             </h1>
             <p className="text-gray-600">
-              Sign in to your NestHub account
+              Sign in to your Kiray Bet account
             </p>
           </div>
 

@@ -62,6 +62,7 @@ export interface Pagination {
 }
 
 export interface HouseFilters {
+  status?: 'approved' | 'rented' | 'all';
   search?: string;
   city?: string;
   minPrice?: number;

@@ -42,7 +42,7 @@ router.post('/', contactLimiter, catchAsync(async (req, res) => {
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #f9f9f9; border-radius: 12px; overflow: hidden;">
         <div style="background: linear-gradient(135deg, #E8B84B, #C9922A); padding: 24px 32px;">
           <h2 style="margin: 0; color: #070C17; font-size: 22px;">New Contact Message</h2>
-          <p style="margin: 4px 0 0; color: #070C17; opacity: 0.7; font-size: 14px;">Via NestHub Contact Form</p>
+          <p style="margin: 4px 0 0; color: #070C17; opacity: 0.7; font-size: 14px;">Via Kiray Bet Contact Form</p>
         </div>
         <div style="padding: 32px;">
           <table style="width: 100%; border-collapse: collapse;">
@@ -55,7 +55,7 @@ router.post('/', contactLimiter, catchAsync(async (req, res) => {
           <div style="margin-top: 20px; padding: 20px; background: #fff; border-radius: 8px; border-left: 4px solid #E8B84B;">
             <p style="margin: 0; color: #333; font-size: 14px; line-height: 1.7; white-space: pre-wrap;">${message}</p>
           </div>
-          <p style="margin-top: 24px; font-size: 12px; color: #999;">Sent from NestHub contact form · ${new Date().toLocaleString()}</p>
+          <p style="margin-top: 24px; font-size: 12px; color: #999;">Sent from Kiray Bet contact form · ${new Date().toLocaleString()}</p>
         </div>
       </div>
     `,
@@ -64,7 +64,7 @@ router.post('/', contactLimiter, catchAsync(async (req, res) => {
   // Auto-reply to user
   await sendEmail({
     to: email,
-    subject: 'We received your message — NestHub',
+    subject: 'We received your message — Kiray Bet',
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #070C17; border-radius: 12px; overflow: hidden;">
         <div style="background: linear-gradient(135deg, #E8B84B, #C9922A); padding: 24px 32px;">
@@ -74,12 +74,12 @@ router.post('/', contactLimiter, catchAsync(async (req, res) => {
         <div style="padding: 32px;">
           <p style="color: #e0e0e0; font-size: 15px; line-height: 1.6;">Hi <strong style="color: #E8B84B;">${name}</strong>,</p>
           <p style="color: #aaa; font-size: 14px; line-height: 1.7;">
-            Thank you for reaching out to NestHub. We've received your message about <strong style="color: #E8B84B;">"${subject}"</strong> and our team will respond within 24–48 hours.
+            Thank you for reaching out to Kiray Bet. We've received your message about <strong style="color: #E8B84B;">"${subject}"</strong> and our team will respond within 24–48 hours.
           </p>
           <div style="margin: 24px 0; padding: 16px 20px; background: rgba(232,184,75,0.08); border-radius: 8px; border: 1px solid rgba(232,184,75,0.2);">
             <p style="margin: 0; color: #ccc; font-size: 13px; line-height: 1.6;">Your message: <br/><em style="color: #999;">"${message.slice(0, 200)}${message.length > 200 ? '...' : ''}"</em></p>
           </div>
-          <p style="color: #666; font-size: 12px; margin-top: 32px;">This is an automated confirmation from NestHub. Please do not reply to this email.</p>
+          <p style="color: #666; font-size: 12px; margin-top: 32px;">This is an automated confirmation from Kiray Bet. Please do not reply to this email.</p>
         </div>
       </div>
     `,
