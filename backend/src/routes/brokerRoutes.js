@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { protect } = require('../middleware/auth');
-const { authorize } = require('../middleware/role');
+const { authorize, requireApprovedBroker } = require('../middleware/role');
 const brokerController = require('../controllers/brokerController');
 
 // Public
@@ -10,12 +10,15 @@ router.get('/approved', brokerController.getApprovedBrokers);
 // Any logged-in user can apply
 router.post('/apply', protect, brokerController.applyBroker);
 
+// Confirm payment (for broker applicant)
+router.post('/confirm-payment', protect, brokerController.confirmBrokerPayment);
+
 // Owner submits property to a broker
-router.post('/submit-property', protect, authorize('owner', 'renter'), brokerController.ownerSubmitToBroker);
+router.post('/submit-property', protect, brokerController.ownerSubmitToBroker);
 
 // Broker-only routes
-router.get('/submissions', protect, authorize('broker'), brokerController.getMySubmissions);
-router.put('/submissions/:houseId/respond', protect, authorize('broker'), brokerController.respondToSubmission);
+router.get('/submissions', protect, authorize('broker'), requireApprovedBroker, brokerController.getMySubmissions);
+router.put('/submissions/:houseId/respond', protect, authorize('broker'), requireApprovedBroker, brokerController.respondToSubmission);
 
 // Admin routes
 router.get('/applications', protect, authorize('admin'), brokerController.getBrokerApplications);

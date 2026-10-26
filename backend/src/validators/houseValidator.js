@@ -13,8 +13,9 @@ const createHouseValidator = [
   }),
   body('bedrooms').isInt({ min: 0 }).withMessage('Bedrooms must be a non-negative integer'),
   body('bathrooms').isInt({ min: 0 }).withMessage('Bathrooms must be a non-negative integer'),
-  body('propertyType').isIn(['apartment', 'house', 'condo', 'studio', 'villa', 'townhouse']).withMessage('Invalid property type'),
+  body('propertyType').isIn(['apartment', 'house', 'condo', 'studio', 'villa', 'townhouse', 'penthouse', 'beach house']).withMessage('Invalid property type'),
   body('amenities').optional().isArray().withMessage('Amenities must be an array'),
+  body('contactPhone').optional().isString(),
   body('isPremium').optional().isBoolean(),
 ];
 

@@ -3,10 +3,10 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const House = require('../models/House');
 const Inquiry = require('../models/Inquiry');
-const Message = require('../models/Message');
 const logger = require('../utils/logger');
 
 let io;
+const onlineUsers = new Map();
 
 const initSocket = (server) => {
   io = new Server(server, {
@@ -34,6 +34,10 @@ const initSocket = (server) => {
 
   io.on('connection', (socket) => {
     logger.info(`User ${socket.user.email} connected`);
+    const socketUserId = socket.user.id;
+    onlineUsers.set(socketUserId, (onlineUsers.get(socketUserId) || 0) + 1);
+    socket.join(`user_${socketUserId}`);
+    io.emit('user-online', { userId: socketUserId });
 
     // Join a room based on inquiry ID
     socket.on('join-inquiry', (inquiryId) => {

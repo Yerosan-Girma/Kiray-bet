@@ -20,6 +20,12 @@ export const brokerService = {
     return response.data;
   },
 
+  // Confirm broker payment
+  confirmBrokerPayment: async (transactionId: string) => {
+    const response = await api.post('/broker/confirm-payment', { transactionId });
+    return response.data;
+  },
+
   // Owner submits property to a specific broker
   ownerSubmitToBroker: async (data: {
     brokerId: string;

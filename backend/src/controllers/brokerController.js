@@ -14,6 +14,12 @@ exports.applyBroker = catchAsync(async (req, res) => {
   res.status(201).json({ success: true, data: result });
 });
 
+exports.confirmBrokerPayment = catchAsync(async (req, res) => {
+  const { transactionId } = req.body;
+  const result = await brokerService.confirmBrokerPayment(transactionId);
+  res.json({ success: true, data: result });
+});
+
 exports.ownerSubmitToBroker = catchAsync(async (req, res) => {
   const { brokerId, ...propertyData } = req.body;
   const house = await brokerService.ownerSubmitToBroker(req.user.id, brokerId, propertyData);

@@ -9,7 +9,7 @@ import { brokerService } from '../services/broker.service';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'sonner';
 
-const STEPS = ['Application', 'Payment', 'Confirmation'];
+const STEPS = ['Application', 'Payment', 'Confirm Payment', 'Confirmation'];
 
 const PAYMENT_METHODS = [
   { id: 'telebirr', label: 'Telebirr (Mock)', icon: '📱', description: 'Instant mobile payment simulation' },
@@ -30,6 +30,7 @@ export default function BrokerApplyPage() {
     nationalId: '',
     paymentMethod: 'telebirr' as 'telebirr' | 'bank_transfer',
   });
+  const [transactionId, setTransactionId] = useState<string | null>(null);
 
   const handleSubmit = async () => {
     setLoading(true);
@@ -38,12 +39,28 @@ export default function BrokerApplyPage() {
         ...form,
         yearsExperience: Number(form.yearsExperience) || 0,
       });
+      // Store transaction ID for confirmation step
+      setTransactionId(result.data.transaction._id);
+      setStep(2); // Move to confirm payment step
+      toast.success('Payment initiated! Please confirm to complete application.');
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'Failed to initiate payment');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleConfirmPayment = async () => {
+    if (!transactionId) return;
+    setLoading(true);
+    try {
+      await brokerService.confirmBrokerPayment(transactionId);
       // Update local user state to reflect pending status
       updateUser({ brokerApplicationStatus: 'pending' } as any);
-      setStep(2);
-      toast.success('Application submitted successfully!');
+      setStep(3); // Move to confirmation step
+      toast.success('Payment confirmed! Application submitted for review.');
     } catch (err: any) {
-      toast.error(err.response?.data?.message || 'Failed to submit application');
+      toast.error(err.response?.data?.message || 'Failed to confirm payment');
     } finally {
       setLoading(false);
     }
@@ -229,7 +246,7 @@ export default function BrokerApplyPage() {
                 style={{ background: 'linear-gradient(135deg, #E8B84B, #C9922A)', color: '#070C17' }}>
                 {loading
                   ? <><span className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" /> Processing...</>
-                  : <><CreditCard className="w-4 h-4" /> Pay ETB 500 & Submit</>}
+                  : <><CreditCard className="w-4 h-4" /> Initiate Payment</>}
               </button>
 
               <p className="text-xs text-center text-muted-foreground mt-4">
@@ -238,12 +255,59 @@ export default function BrokerApplyPage() {
             </motion.div>
           )}
 
-          {/* Step 2: Confirmation */}
+          {/* Step 2: Confirm Payment */}
           {step === 2 && (
+            <motion.div key="confirm-payment" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}
+              className="bg-white rounded-3xl border border-border shadow-sm p-8 text-center">
+              <div className="w-20 h-20 rounded-full bg-blue-100 flex items-center justify-center mx-auto mb-6">
+                <CreditCard className="w-10 h-10 text-blue-500" />
+              </div>
+              <h2 className="text-2xl font-black text-foreground mb-3" style={{ fontFamily: 'Urbanist, sans-serif' }}>
+                Confirm Payment
+              </h2>
+              <p className="text-muted-foreground text-sm mb-2">
+                Payment has been initiated for ETB 500
+              </p>
+              <p className="text-muted-foreground text-sm mb-8">
+                Please confirm the payment to complete your broker application submission.
+              </p>
+
+              <div className="p-4 rounded-2xl bg-blue-50 border border-blue-200 mb-8 text-left">
+                <p className="text-xs font-semibold text-blue-800 uppercase mb-3">Payment Details</p>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-blue-700">Amount</span>
+                    <span className="font-bold text-blue-900">ETB 500</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-blue-700">Method</span>
+                    <span className="font-bold text-blue-900 capitalize">{form.paymentMethod}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex gap-3">
+                <button onClick={() => setStep(1)} disabled={loading}
+                  className="flex-1 py-3 rounded-xl border-2 border-border font-semibold text-sm text-foreground hover:bg-muted transition-colors disabled:opacity-50">
+                  Cancel
+                </button>
+                <button onClick={handleConfirmPayment} disabled={loading}
+                  className="flex-1 py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-50 transition-all hover:scale-[1.02]"
+                  style={{ background: 'linear-gradient(135deg, #E8B84B, #C9922A)', color: '#070C17' }}>
+                  {loading
+                    ? <><span className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" /> Confirming...</}
+                    : <><CheckCircle className="w-4 h-4" /> Confirm Payment</>}
+                </button>
+              </div>
+            </motion.div>
+          )}
+
+          {/* Step 3: Confirmation */}
+          {step === 3 && (
             <motion.div key="confirm" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
               className="bg-white rounded-3xl border border-border shadow-sm p-8 text-center">
-              <div className="w-20 h-20 rounded-full bg-amber-100 flex items-center justify-center mx-auto mb-6">
-                <CheckCircle className="w-10 h-10 text-amber-500" />
+              <div className="w-20 h-20 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-6">
+                <CheckCircle className="w-10 h-10 text-green-500" />
               </div>
               <h2 className="text-2xl font-black text-foreground mb-3" style={{ fontFamily: 'Urbanist, sans-serif' }}>
                 Application Submitted!
@@ -258,7 +322,8 @@ export default function BrokerApplyPage() {
               <div className="p-4 rounded-2xl bg-muted/40 text-left mb-8">
                 <p className="text-xs font-semibold text-muted-foreground uppercase mb-3">What happens next?</p>
                 {[
-                  'Admin reviews your application and payment',
+                  'Payment confirmed successfully',
+                  'Admin reviews your application',
                   'You receive an approval or rejection notification',
                   'Once approved, your role changes to Broker',
                   'You can access the Broker Dashboard',

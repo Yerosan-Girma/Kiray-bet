@@ -17,9 +17,16 @@ router.put('/users/:id/restore', adminController.restoreUser);
 router.get('/listings', adminController.getListings);
 router.put('/listings/:id/approve', adminController.approveListing);
 router.put('/listings/:id/reject', adminController.rejectListing);
+router.put('/listings/:id/suspend', adminController.suspendListing);
 router.delete('/listings/:id', adminController.deleteListing);
 
 router.get('/transactions', adminController.getTransactions);
 router.get('/auditlogs', adminController.getAuditLogs);
+
+// Broker application management
+router.get('/broker-applications', adminController.getBrokerApplications);
+router.put('/broker-applications/:id/approve', adminController.approveBroker);
+router.put('/broker-applications/:id/reject', adminController.rejectBroker);
+router.put('/broker-applications/:id/suspend', adminController.suspendBroker);
 
 module.exports = router;

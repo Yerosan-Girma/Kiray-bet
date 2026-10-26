@@ -12,6 +12,14 @@ export interface User {
   status: 'active' | 'suspended' | 'banned';
   emailVerified?: boolean;
   createdAt?: string;
+  // Broker fields
+  brokerApplicationStatus?: 'none' | 'pending' | 'approved' | 'rejected';
+  brokerApplicationNotes?: string;
+  brokerCompanyName?: string;
+  brokerOfficeAddress?: string;
+  brokerYearsExperience?: number;
+  brokerDescription?: string;
+  brokerNationalId?: string;
 }
 
 export interface House {
@@ -30,8 +38,13 @@ export interface House {
   amenities: string[];
   images: string[];
   listedBy: User | string;
+  ownerId?: User | string | null;
+  brokerId?: User | string | null;
+  assignedBroker?: User | string | null;
+  uploadedBy?: User | string | null;
+  brokerSubmissionStatus?: 'none' | 'pending_broker' | 'accepted' | 'rejected';
   isPremium: boolean;
-  status: 'pending' | 'approved' | 'rejected' | 'inactive';
+  status: 'pending' | 'approved' | 'rejected' | 'inactive' | 'rented';
   isActive: boolean;
   views: number;
   inquiryCount: number;
@@ -84,7 +97,12 @@ export interface Inquiry {
 export interface Notification {
   _id: string;
   userId: string;
-  type: 'new_inquiry' | 'new_reply' | 'listing_approved' | 'listing_rejected' | 'premium_activated' | 'listing_flagged';
+  type:
+    | 'new_inquiry' | 'new_reply' | 'listing_approved' | 'listing_rejected'
+    | 'premium_activated' | 'listing_flagged'
+    | 'broker_application_received' | 'broker_approved' | 'broker_rejected'
+    | 'new_owner_submission' | 'owner_submission_accepted' | 'owner_submission_rejected'
+    | 'new_message';
   message: string;
   data: Record<string, any>;
   read: boolean;

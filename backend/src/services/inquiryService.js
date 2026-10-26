@@ -6,20 +6,45 @@ const AuditLog = require('../models/AuditLog');
 const { AppError } = require('../utils/AppError');
 const { getIO } = require('../config/socket');
 const { sendEmail } = require('./emailService');
+const { ensureConversation, sendMessage } = require('./messageService');
+
+const idOf = (value) => value?._id?.toString?.() || value?.toString?.();
 
 const createInquiry = async (userId, houseId, contactPhone, message) => {
   const house = await House.findById(houseId);
   if (!house) throw new AppError('House not found', 404);
+  if (house.status !== 'approved' || !house.isActive) {
+    throw new AppError('Only published properties can receive renter inquiries', 400);
+  }
 
   const renter = await User.findById(userId);
-  const broker = await User.findById(house.listedBy);
+  const brokerId = idOf(house.brokerId) || idOf(house.assignedBroker) || idOf(house.listedBy);
+  const broker = await User.findOne({
+    _id: brokerId,
+    role: 'broker',
+    isApproved: true,
+    brokerApplicationStatus: 'approved',
+    status: 'active',
+  });
+  if (!broker) throw new AppError('This property does not have an approved broker', 400);
+
+  const conversation = await ensureConversation({
+    senderId: userId,
+    receiverId: broker._id,
+    houseId,
+    createdBy: userId,
+  });
 
   const inquiry = await Inquiry.create({
     houseId,
     userId,
+    brokerId: broker._id,
+    conversationId: conversation.conversationKey,
     contactPhone,
     replies: [{ userId, message }],
   });
+
+  await sendMessage(userId, broker._id, message, houseId, conversation.conversationKey);
 
   // Increment inquiry count
   house.inquiryCount += 1;
@@ -36,15 +61,15 @@ const createInquiry = async (userId, houseId, contactPhone, message) => {
 
   // Notify broker (listedBy)
   const notification = await Notification.create({
-    userId: house.listedBy,
+    userId: broker._id,
     type: 'new_inquiry',
     message: `New inquiry from ${renter.name} for your house ${house.title}`,
-    data: { inquiryId: inquiry._id, houseId: house._id },
+    data: { inquiryId: inquiry._id, houseId: house._id, conversationId: conversation.conversationKey },
   });
 
   // Emit via socket to the broker if online
   const io = getIO();
-  io.to(`user_${house.listedBy}`).emit('notification', notification);
+  io.to(`user_${broker._id}`).emit('notification', notification);
 
   // Send email to broker
   try {
@@ -85,8 +110,11 @@ const getInquiriesForUser = async (userId, role, page = 1, limit = 10) => {
   } else if (role === 'renter') {
     query.userId = userId;
   } else if (['owner', 'broker'].includes(role)) {
-    // Get houses listed by this user
-    const houses = await House.find({ listedBy: userId }).select('_id');
+    // Brokers see inquiries for properties they published. Owners see inquiries for their submitted properties.
+    const houseQuery = role === 'broker'
+      ? { $or: [{ listedBy: userId }, { brokerId: userId }, { assignedBroker: userId }] }
+      : { ownerId: userId };
+    const houses = await House.find(houseQuery).select('_id');
     const houseIds = houses.map((h) => h._id);
     query.houseId = { $in: houseIds };
   } else {
@@ -96,6 +124,7 @@ const getInquiriesForUser = async (userId, role, page = 1, limit = 10) => {
   const skip = (page - 1) * limit;
   const inquiries = await Inquiry.find(query)
     .populate('userId', 'name email phone')
+    .populate('brokerId', 'name email phone')
     .populate('houseId', 'title location price images')
     .populate('replies.userId', 'name email role')
     .sort({ createdAt: -1 })
@@ -123,8 +152,9 @@ const addReply = async (inquiryId, userId, message) => {
   // Check if user is participant (renter or listedBy)
   const house = await House.findById(inquiry.houseId);
   const isRenter = inquiry.userId.toString() === userId;
-  const isListedBy = house.listedBy.toString() === userId;
-  if (!isRenter && !isListedBy) {
+  const brokerId = idOf(inquiry.brokerId) || idOf(house.brokerId) || idOf(house.assignedBroker) || idOf(house.listedBy);
+  const isBroker = brokerId === userId;
+  if (!isRenter && !isBroker) {
     throw new AppError('Not authorized to reply', 403);
   }
 
@@ -134,7 +164,7 @@ const addReply = async (inquiryId, userId, message) => {
   await inquiry.save();
 
   // Notify the other party
-  const otherUserId = isRenter ? house.listedBy : inquiry.userId;
+  const otherUserId = isRenter ? brokerId : inquiry.userId;
   const otherUser = await User.findById(otherUserId);
   const currentUser = await User.findById(userId);
 

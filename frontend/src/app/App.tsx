@@ -29,6 +29,7 @@ const BrokerPendingPage = lazy(() => import('../pages/BrokerPendingPage'));
 const AdminDashboard = lazy(() => import('../pages/AdminDashboard'));
 const OwnerDashboard = lazy(() => import('../pages/OwnerDashboard'));
 const BrokerDashboard = lazy(() => import('../pages/BrokerDashboard'));
+const ContactPage = lazy(() => import('../pages/ContactPage'));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -63,6 +64,7 @@ export default function App() {
                     <Route path="/properties" element={<PropertiesPage />} />
                     <Route path="/properties/:id" element={<PropertyDetailPage />} />
                     <Route path="/premium" element={<PremiumPage />} />
+                    <Route path="/contact" element={<ContactPage />} />
 
                     {/* Auth */}
                     <Route path="/login" element={<LoginPage />} />
@@ -86,7 +88,7 @@ export default function App() {
                     <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
                       <Route path="/admin" element={<AdminDashboard />} />
                     </Route>
-                    <Route element={<ProtectedRoute allowedRoles={['owner']} />}>
+                    <Route element={<ProtectedRoute allowedRoles={['owner', 'renter']} />}>
                       <Route path="/owner" element={<OwnerDashboard />} />
                     </Route>
                     <Route element={<ProtectedRoute allowedRoles={['broker']} />}>

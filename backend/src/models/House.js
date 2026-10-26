@@ -45,6 +45,10 @@ const houseSchema = new mongoose.Schema(
       required: [true, 'Number of bathrooms is required'],
       min: 0,
     },
+    sqft: {
+      type: Number,
+      default: 0,
+    },
     propertyType: {
       type: String,
       enum: ['apartment', 'house', 'condo', 'studio', 'villa', 'townhouse', 'penthouse', 'beach house'],
@@ -67,13 +71,23 @@ const houseSchema = new mongoose.Schema(
       ref: 'User',
       required: true,
     },
+    brokerId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      default: null,
+    },
+    uploadedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      default: null,
+    },
     isPremium: {
       type: Boolean,
       default: false,
     },
     status: {
       type: String,
-      enum: ['pending', 'approved', 'rejected', 'inactive'],
+      enum: ['pending', 'approved', 'rejected', 'inactive', 'rented'],
       default: 'pending',
     },
     isActive: {
@@ -107,10 +121,44 @@ const houseSchema = new mongoose.Schema(
       ref: 'User',
       default: null,
     },
+    contactPhone: {
+      type: String,
+      trim: true,
+      default: '',
+    },
     brokerSubmissionStatus: {
       type: String,
       enum: ['none', 'pending_broker', 'accepted', 'rejected'],
       default: 'none',
+    },
+    rating: {
+      type: Number,
+      default: 0,
+      min: 0,
+      max: 5,
+    },
+    reviews: [{
+      userId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+      },
+      rating: {
+        type: Number,
+        min: 1,
+        max: 5,
+      },
+      comment: {
+        type: String,
+        trim: true,
+      },
+      createdAt: {
+        type: Date,
+        default: Date.now,
+      },
+    }],
+    tags: {
+      type: [String],
+      default: [],
     },
   },
   {
@@ -128,5 +176,8 @@ houseSchema.index({ bathrooms: 1 });
 houseSchema.index({ status: 1 });
 houseSchema.index({ isActive: 1 });
 houseSchema.index({ isPremium: 1 });
+houseSchema.index({ ownerId: 1 });
+houseSchema.index({ brokerId: 1 });
+houseSchema.index({ assignedBroker: 1, brokerSubmissionStatus: 1 });
 
 module.exports = mongoose.model('House', houseSchema);

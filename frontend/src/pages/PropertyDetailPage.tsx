@@ -106,7 +106,7 @@ function InquiryForm({ house }: { house: House }) {
     setLoading(true);
     try {
       await inquiryService.createInquiry({ houseId: house._id, ...form });
-      toast.success('Inquiry sent! The owner will contact you shortly.');
+      toast.success('Inquiry sent! The broker will contact you shortly.');
       setForm({ contactPhone: user?.phone || '', message: '' });
     } catch (err: any) {
       toast.error(err.response?.data?.message || 'Failed to send inquiry');
@@ -188,7 +188,9 @@ export default function PropertyDetailPage() {
     </div>
   );
 
-  const owner = typeof house.listedBy === 'object' ? house.listedBy : null;
+  const broker = typeof house.brokerId === 'object' ? house.brokerId : 
+                  typeof house.assignedBroker === 'object' ? house.assignedBroker :
+                  typeof house.listedBy === 'object' ? house.listedBy : null;
 
   return (
     <div className="min-h-screen bg-background pt-20">
@@ -321,28 +323,34 @@ export default function PropertyDetailPage() {
 
           {/* Right sidebar */}
           <div className="space-y-6">
-            {/* Owner card */}
-            {owner && (
+            {/* Broker card */}
+            {broker && (
               <div className="bg-white rounded-3xl border border-border shadow-sm p-6">
-                <h3 className="font-bold text-foreground mb-4">Listed By</h3>
+                <h3 className="font-bold text-foreground mb-4">Contact Broker</h3>
                 <div className="flex items-center gap-3 mb-4">
                   <div className="w-12 h-12 rounded-2xl bg-amber-100 flex items-center justify-center overflow-hidden">
-                    {owner.profileImage
-                      ? <img src={owner.profileImage} alt={owner.name} className="w-full h-full object-cover" />
-                      : <span className="font-bold text-amber-700 text-lg">{owner.name?.[0]}</span>
+                    {broker.profileImage
+                      ? <img src={broker.profileImage} alt={broker.name} className="w-full h-full object-cover" />
+                      : <span className="font-bold text-amber-700 text-lg">{broker.name?.[0]}</span>
                     }
                   </div>
                   <div>
-                    <p className="font-bold text-foreground text-sm">{owner.name}</p>
-                    <p className="text-xs text-muted-foreground capitalize">{owner.role}</p>
+                    <p className="font-bold text-foreground text-sm">{broker.name}</p>
+                    <p className="text-xs text-muted-foreground capitalize">{broker.role}</p>
+                    {(broker as any).brokerCompanyName && (
+                      <p className="text-xs text-muted-foreground">{(broker as any).brokerCompanyName}</p>
+                    )}
                   </div>
                 </div>
-                {owner.phone && (
-                  <a href={`tel:${owner.phone}`}
+                {broker.phone && (
+                  <a href={`tel:${broker.phone}`}
                     className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border-2 border-border text-sm font-semibold text-foreground hover:border-amber-500 transition-colors">
-                    <Phone className="w-4 h-4" /> {owner.phone}
+                    <Phone className="w-4 h-4" /> {broker.phone}
                   </a>
                 )}
+                <p className="text-xs text-muted-foreground mt-3 text-center">
+                  Renters contact the broker for this property
+                </p>
               </div>
             )}
 

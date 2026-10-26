@@ -16,6 +16,7 @@ const auditLogSchema = new mongoose.Schema(
       type: String,
       required: true,
       enum: [
+        'approve_user',
         'approve_broker',
         'reject_broker',
         'suspend_user',
@@ -61,12 +62,16 @@ const auditLogSchema = new mongoose.Schema(
   }
 );
 
-// Prevent updates to audit logs
+// Audit logs are append-only.
 auditLogSchema.pre('save', function (next) {
-  if (this.isModified('action') || this.isModified('targetId') || this.isModified('targetType')) {
-    // Allow only creation, prevent modification of core fields
+  if (!this.isNew && this.isModified()) {
+    return next(new Error('Audit logs cannot be edited'));
   }
   next();
+});
+
+auditLogSchema.pre(['updateOne', 'updateMany', 'findOneAndUpdate', 'replaceOne'], function (next) {
+  next(new Error('Audit logs cannot be edited'));
 });
 
 // Indexes for efficient querying

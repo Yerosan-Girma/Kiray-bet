@@ -14,7 +14,7 @@ const transactionSchema = new mongoose.Schema(
     },
     paymentMethod: {
       type: String,
-      enum: ['chapa', 'telebirr', 'mpesa'],
+      enum: ['chapa', 'telebirr', 'mpesa', 'bank_transfer'],
       required: true,
     },
     reference: {

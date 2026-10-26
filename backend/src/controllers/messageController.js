@@ -12,9 +12,15 @@ exports.getMessages = catchAsync(async (req, res) => {
     req.user.id,
     req.params.partnerId,
     parseInt(page),
-    parseInt(limit)
+    parseInt(limit),
+    req.query.houseId || null
   );
-  res.json({ success: true, data: result.messages, pagination: result.pagination });
+  res.json({
+    success: true,
+    data: result.messages,
+    conversation: result.conversation,
+    pagination: result.pagination,
+  });
 });
 
 exports.sendMessage = catchAsync(async (req, res) => {
@@ -23,7 +29,19 @@ exports.sendMessage = catchAsync(async (req, res) => {
     req.user.id,
     req.params.partnerId,
     content,
-    houseId
+    houseId || null,
+    req.body.conversationId || null
   );
   res.status(201).json({ success: true, data: msg });
+});
+
+exports.ensureConversation = catchAsync(async (req, res) => {
+  const conversation = await messageService.ensureConversation({
+    senderId: req.user.id,
+    receiverId: req.body.partnerId,
+    houseId: req.body.houseId || null,
+    createdBy: req.user.id,
+  });
+
+  res.status(201).json({ success: true, data: conversation });
 });

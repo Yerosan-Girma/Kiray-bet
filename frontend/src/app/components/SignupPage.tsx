@@ -4,8 +4,10 @@ import { Link, useNavigate } from 'react-router';
 import { Mail, Lock, User, Check, X, Eye, EyeOff, UserPlus } from 'lucide-react';
 import { authService } from '../../services/auth.service';
 import { toast } from 'sonner';
+import { useAuth } from '../../context/AuthContext';
 
 export function SignupPage() {
+  const { login } = useAuth();
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -49,8 +51,32 @@ export function SignupPage() {
       const { confirmPassword, ...registerData } = formData;
       const response = await authService.register(registerData);
       console.log('Registration response:', response);
-      toast.success('Registration successful! Redirecting to login...');
-      navigate('/login');
+
+      // Automatically log the user in after successful registration
+      const { user, accessToken } = response.data;
+      // Normalize: backend returns `id` or `_id` — unify both
+      const normalizedUser = { ...user, _id: user._id || user.id };
+      login(normalizedUser, accessToken, true); // remember me = true
+
+      toast.success('Account created successfully! Welcome to NestHub!');
+
+      // Navigate to appropriate dashboard based on role
+      const role = normalizedUser.role;
+      if (role === 'admin') {
+        navigate('/admin');
+      } else if (role === 'owner') {
+        navigate('/owner');
+      } else if (role === 'broker') {
+        // Approved brokers go to dashboard, unapproved go to pending
+        if (normalizedUser.isApproved) {
+          navigate('/broker');
+        } else {
+          navigate('/broker/pending');
+        }
+      } else {
+        // renter
+        navigate('/');
+      }
     } catch (error: any) {
       console.error('Registration error:', error);
       toast.error(error.response?.data?.message || 'Registration failed');
@@ -95,6 +121,33 @@ export function SignupPage() {
                   required
                   className="w-full pl-12 pr-4 py-3.5 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-200 transition-all"
                 />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                I want to
+              </label>
+              <div className="grid grid-cols-3 gap-3">
+                {[
+                  { value: 'renter', label: 'Rent a Home', icon: '🏠' },
+                  { value: 'owner', label: 'List Property', icon: '🔑' },
+                  { value: 'broker', label: 'Become a Broker', icon: '💼' },
+                ].map((option) => (
+                  <button
+                    key={option.value}
+                    type="button"
+                    onClick={() => setFormData({ ...formData, role: option.value as any })}
+                    className={`p-3 rounded-xl border-2 transition-all ${
+                      formData.role === option.value
+                        ? 'border-amber-500 bg-amber-50 text-amber-700'
+                        : 'border-gray-200 hover:border-amber-300 text-gray-600'
+                    }`}
+                  >
+                    <div className="text-2xl mb-1">{option.icon}</div>
+                    <div className="text-xs font-semibold">{option.label}</div>
+                  </button>
+                ))}
               </div>
             </div>
 

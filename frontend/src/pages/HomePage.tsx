@@ -754,7 +754,7 @@ function Newsletter() {
   const [sent, setSent] = useState(false);
 
   return (
-    <section id="contact" className="py-20 relative overflow-hidden" style={{ background: "#070C17" }}>
+    <section id="newsletter" className="py-20 relative overflow-hidden" style={{ background: "#070C17" }}>
       {/* Glow */}
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
         <div className="w-[600px] h-[300px] rounded-full blur-3xl opacity-20"

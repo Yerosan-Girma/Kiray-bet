@@ -22,10 +22,8 @@ export const houseService = {
     return response.data; // { success, data: house }
   },
 
-  createHouse: async (data: FormData) => {
-    const response = await api.post('/houses', data, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    });
+  createHouse: async (data: any) => {
+    const response = await api.post('/houses', data);
     return response.data;
   },
 

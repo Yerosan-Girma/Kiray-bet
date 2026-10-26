@@ -29,6 +29,15 @@ const inquirySchema = new mongoose.Schema(
       ref: 'User',
       required: true,
     },
+    brokerId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
+    },
+    conversationId: {
+      type: String,
+      required: true,
+    },
     contactPhone: {
       type: String,
       required: true,
@@ -46,6 +55,8 @@ const inquirySchema = new mongoose.Schema(
 );
 
 inquirySchema.index({ houseId: 1, userId: 1 });
+inquirySchema.index({ brokerId: 1 });
+inquirySchema.index({ conversationId: 1 });
 inquirySchema.index({ status: 1 });
 
 module.exports = mongoose.model('Inquiry', inquirySchema);

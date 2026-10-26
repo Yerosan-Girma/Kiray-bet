@@ -8,54 +8,92 @@ const { v4: uuidv4 } = require('uuid');
 const { createNotification } = require('./notificationService');
 const { getIO } = require('../config/socket');
 const { sendEmail } = require('./emailService');
+const { ensureConversation } = require('./messageService');
 
 // ── Apply to become a broker ──────────────────────────────────────────────────
 const applyBroker = async (userId, applicationData, paymentMethod) => {
   const user = await User.findById(userId);
   if (!user) throw new AppError('User not found', 404);
+  if (!['telebirr', 'bank_transfer'].includes(paymentMethod)) {
+    throw new AppError('Unsupported broker registration payment method', 400);
+  }
   if (user.role === 'broker' && user.brokerApplicationStatus === 'approved') {
     throw new AppError('You are already an approved broker', 400);
   }
-  if (user.brokerApplicationStatus === 'pending') {
+  if (user.brokerApplicationStatus === 'pending' || user.brokerApplicationStatus === 'payment_pending') {
     throw new AppError('You already have a pending application', 400);
   }
 
-  // Process mock registration payment (500 KSh flat fee)
+  // Create pending transaction (payment not yet confirmed)
   const REGISTRATION_FEE = 500;
   const reference = `BROKER-${uuidv4()}`;
-  const receiptNumber = `RCP-${uuidv4().slice(0, 8).toUpperCase()}`;
 
   const transaction = await Transaction.create({
     userId,
     amount: REGISTRATION_FEE,
     paymentMethod,
     reference,
-    receiptNumber,
-    status: 'success', // mock — instantly succeeds
+    status: 'pending', // Payment must be confirmed first
     type: 'broker_registration',
   });
 
-  // Save application data to user
+  // Save application data to user, but status remains 'payment_pending'
+  if (applicationData.fullName) user.name = applicationData.fullName;
+  if (applicationData.phone) user.phone = applicationData.phone;
   user.brokerCompanyName = applicationData.companyName || '';
   user.brokerOfficeAddress = applicationData.officeAddress || '';
   user.brokerYearsExperience = applicationData.yearsExperience || 0;
   user.brokerDescription = applicationData.description || '';
   user.brokerNationalId = applicationData.nationalId || '';
-  user.brokerApplicationStatus = 'pending';
+  user.brokerDocuments = Array.isArray(applicationData.supportingDocuments)
+    ? applicationData.supportingDocuments
+    : [];
+  user.brokerApplicationStatus = 'payment_pending'; // NOT 'pending' yet
+  user.brokerApplicationNotes = '';
   user.brokerRegistrationTxId = transaction._id;
-  // If they submitted as non-broker role, keep existing role — admin will change to broker on approval
   await user.save({ validateBeforeSave: false });
 
   // Audit log
   await AuditLog.create({
     userId,
-    action: 'broker_application_submitted',
+    action: 'broker_payment_initiated',
     targetId: user._id,
     targetType: 'broker_application',
     details: { transactionId: transaction._id, paymentMethod },
   });
 
-  // Notify all admins
+  return { transaction, user };
+};
+
+// ── Confirm broker payment (called after payment succeeds) ───────────────────
+const confirmBrokerPayment = async (transactionId) => {
+  const transaction = await Transaction.findById(transactionId);
+  if (!transaction) throw new AppError('Transaction not found', 404);
+  if (transaction.type !== 'broker_registration') throw new AppError('Invalid transaction type', 400);
+  if (transaction.status === 'success') throw new AppError('Payment already confirmed', 400);
+
+  const user = await User.findById(transaction.userId);
+  if (!user) throw new AppError('User not found', 404);
+
+  // Update transaction status
+  transaction.status = 'success';
+  transaction.receiptNumber = `RCP-${uuidv4().slice(0, 8).toUpperCase()}`;
+  await transaction.save();
+
+  // Change user status to 'pending' (now ready for admin review)
+  user.brokerApplicationStatus = 'pending';
+  await user.save({ validateBeforeSave: false });
+
+  // Audit log
+  await AuditLog.create({
+    userId: user._id,
+    action: 'broker_payment_confirmed',
+    targetId: user._id,
+    targetType: 'broker_application',
+    details: { transactionId: transaction._id },
+  });
+
+  // Notify all admins that application is ready for review
   const admins = await User.find({ role: 'admin' });
   const io = getIO();
   for (const admin of admins) {
@@ -63,7 +101,7 @@ const applyBroker = async (userId, applicationData, paymentMethod) => {
       admin._id,
       'broker_application_received',
       `New broker application from ${user.name}`,
-      { applicantId: userId, transactionId: transaction._id }
+      { applicantId: user._id, transactionId: transaction._id }
     );
     io.to(`user_${admin._id}`).emit('notification', notif);
 
@@ -82,10 +120,10 @@ const applyBroker = async (userId, applicationData, paymentMethod) => {
               <li>Name: ${user.name}</li>
               <li>Email: ${user.email}</li>
               <li>Phone: ${user.phone || 'Not provided'}</li>
-              <li>Company: ${applicationData.companyName || 'Not provided'}</li>
-              <li>Years of Experience: ${applicationData.yearsExperience || 0}</li>
+              <li>Company: ${user.brokerCompanyName || 'Not provided'}</li>
+              <li>Years of Experience: ${user.brokerYearsExperience || 0}</li>
             </ul>
-            <p>Please review the application in your admin dashboard.</p>
+            <p>The registration fee has been paid. Please review the application in your admin dashboard.</p>
             <p style="color: #666; font-size: 12px;">This is an automated email from RentalWPA.</p>
           </div>
         `,
@@ -93,6 +131,33 @@ const applyBroker = async (userId, applicationData, paymentMethod) => {
     } catch (emailError) {
       console.error('Failed to send email to admin:', emailError);
     }
+  }
+
+  // Notify user that payment is confirmed and application is under review
+  const userNotif = await createNotification(
+    user._id,
+    'payment_confirmed',
+    'Payment confirmed! Your broker application is now under admin review.',
+    { transactionId: transaction._id }
+  );
+  io.to(`user_${user._id}`).emit('notification', userNotif);
+
+  try {
+    await sendEmail({
+      to: user.email,
+      subject: 'Payment Confirmed - Application Under Review',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #C9922A;">Payment Confirmed</h2>
+          <p>Hello ${user.name},</p>
+          <p>Your broker registration payment has been confirmed successfully.</p>
+          <p>Your application is now under admin review. You will receive a notification once it's approved or rejected.</p>
+          <p style="color: #666; font-size: 12px;">This is an automated email from RentalWPA.</p>
+        </div>
+      `,
+    });
+  } catch (emailError) {
+    console.error('Failed to send email to user:', emailError);
   }
 
   return { transaction, user };
@@ -106,6 +171,7 @@ const approveBrokerApplication = async (adminId, applicantId) => {
     throw new AppError('No pending application found', 400);
   }
 
+  const previousRole = user.role;
   user.role = 'broker';
   user.isApproved = true;
   user.brokerApplicationStatus = 'approved';
@@ -116,7 +182,7 @@ const approveBrokerApplication = async (adminId, applicantId) => {
     action: 'approve_broker',
     targetId: applicantId,
     targetType: 'broker_application',
-    details: { previousRole: user.role, newRole: 'broker' },
+    details: { previousRole, newRole: 'broker' },
   });
 
   const io = getIO();
@@ -229,7 +295,7 @@ const getBrokerApplications = async (filters = {}, page = 1, limit = 10) => {
 const getApprovedBrokers = async () => {
   const brokers = await User.find({
     role: 'broker',
-    isApproved: true,
+    // isApproved: true,
     status: 'active',
   })
     .select('name email phone profileImage brokerCompanyName brokerYearsExperience brokerDescription brokerOfficeAddress')
@@ -242,16 +308,37 @@ const ownerSubmitToBroker = async (ownerId, brokerIdParam, propertyData) => {
   const owner = await User.findById(ownerId);
   if (!owner) throw new AppError('Owner not found', 404);
 
-  const broker = await User.findOne({ _id: brokerIdParam, role: 'broker', isApproved: true });
-  if (!broker) throw new AppError('Broker not found or not approved', 404);
+  const broker = await User.findOne({
+    _id: brokerIdParam,
+    role: 'broker',
+    // isApproved: true,
+    // brokerApplicationStatus: 'approved',
+    status: 'active',
+  });
+  if (!broker) throw new AppError('Broker not found', 404);
+  if (owner.status !== 'active') throw new AppError('Your account is not active', 403);
+
+  if (owner.role === 'renter') {
+    owner.role = 'owner';
+    await owner.save({ validateBeforeSave: false });
+  }
 
   const house = await House.create({
     ...propertyData,
     listedBy: brokerIdParam, // broker will be the publisher
     ownerId,
+    brokerId: brokerIdParam,
+    uploadedBy: brokerIdParam,
     assignedBroker: brokerIdParam,
     status: 'pending',
     brokerSubmissionStatus: 'pending_broker',
+  });
+
+  await ensureConversation({
+    senderId: ownerId,
+    receiverId: brokerIdParam,
+    houseId: house._id,
+    createdBy: ownerId,
   });
 
   // Audit log
@@ -284,11 +371,11 @@ const ownerSubmitToBroker = async (ownerId, brokerIdParam, propertyData) => {
           <p>A property owner has submitted a new property for you to list.</p>
           <p><strong>Property Details:</strong></p>
           <ul>
-            <li>Owner: ${owner.name}</li>
-            <li>Owner Email: ${owner.email}</li>
-            <li>Property Title: ${house.title}</li>
-            <li>Location: ${house.location}</li>
-            <li>Price: KSh ${house.price.toLocaleString()}</li>
+              <li>Owner: ${owner.name}</li>
+              <li>Owner Email: ${owner.email}</li>
+              <li>Property Title: ${house.title}</li>
+              <li>Location: ${house.location}</li>
+              <li>Price: ETB ${house.price.toLocaleString()}</li>
           </ul>
           <p>Please review the submission in your broker dashboard.</p>
           <p style="color: #666; font-size: 12px;">This is an automated email from RentalWPA.</p>
@@ -309,6 +396,10 @@ const brokerRespondToSubmission = async (brokerId, houseId, action, notes = '') 
 
   if (action === 'accept') {
     house.brokerSubmissionStatus = 'accepted';
+    house.brokerId = brokerId;
+    house.assignedBroker = brokerId;
+    house.listedBy = brokerId;
+    house.uploadedBy = brokerId;
     house.status = 'pending'; // still needs admin approval
     await house.save();
 

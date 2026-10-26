@@ -18,9 +18,9 @@ const ethiopianProperties = [
     amenities: ['WiFi', 'Parking', 'Swimming Pool', 'Gym', 'Garden', 'Security', 'Air Conditioning', 'Backup Generator'],
     images: ['https://images.unsplash.com/photo-1613490493576-7fde63acd811?w=800&h=600&fit=crop'],
     isPremium: true,
-    tag: 'Featured',
+    tags: ['Featured'],
     rating: 4.9,
-    reviews: 28,
+    reviews: [],
     views: 1250
   },
   // APARTMENT
@@ -37,9 +37,9 @@ const ethiopianProperties = [
     amenities: ['WiFi', 'Parking', 'Security', 'Elevator', 'Air Conditioning'],
     images: ['https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=800&h=600&fit=crop'],
     isPremium: false,
-    tag: 'New',
+    tags: ['New'],
     rating: 4.5,
-    reviews: 15,
+    reviews: [],
     views: 890
   },
   // STUDIO
@@ -56,9 +56,9 @@ const ethiopianProperties = [
     amenities: ['WiFi', 'Security', 'Air Conditioning'],
     images: ['https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=800&h=600&fit=crop'],
     isPremium: false,
-    tag: null,
+    tags: [],
     rating: 4.2,
-    reviews: 8,
+    reviews: [],
     views: 520
   },
   // PENTHOUSE
@@ -75,9 +75,9 @@ const ethiopianProperties = [
     amenities: ['WiFi', 'Parking', 'Swimming Pool', 'Gym', 'Security', 'Rooftop Terrace', 'Air Conditioning', 'Backup Generator', 'Concierge'],
     images: ['https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=800&h=600&fit=crop'],
     isPremium: true,
-    tag: 'Premium',
+    tags: ['Premium'],
     rating: 5.0,
-    reviews: 12,
+    reviews: [],
     views: 2100
   },
   // BEACH HOUSE (Lake House for Ethiopia context)
@@ -94,9 +94,9 @@ const ethiopianProperties = [
     amenities: ['WiFi', 'Parking', 'Private Dock', 'Garden', 'Security', 'Outdoor Kitchen'],
     images: ['https://images.unsplash.com/photo-1499793983690-e29da59ef1c2?w=800&h=600&fit=crop'],
     isPremium: true,
-    tag: 'Waterfront',
+    tags: ['Waterfront'],
     rating: 4.7,
-    reviews: 19,
+    reviews: [],
     views: 1680
   },
   // HOUSE
@@ -113,9 +113,9 @@ const ethiopianProperties = [
     amenities: ['WiFi', 'Parking', 'Garden', 'Security', 'Air Conditioning', 'Backup Generator'],
     images: ['https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800&h=600&fit=crop'],
     isPremium: false,
-    tag: 'Family',
+    tags: ['Family'],
     rating: 4.6,
-    reviews: 22,
+    reviews: [],
     views: 980
   },
   // Additional Villa
@@ -132,9 +132,9 @@ const ethiopianProperties = [
     amenities: ['WiFi', 'Parking', 'Swimming Pool', 'Gym', 'Garden', 'Security', 'Guest House', 'Air Conditioning'],
     images: ['https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800&h=600&fit=crop'],
     isPremium: true,
-    tag: 'Exclusive',
+    tags: ['Exclusive'],
     rating: 4.8,
-    reviews: 31,
+    reviews: [],
     views: 1450
   },
   // Additional Apartment
@@ -151,9 +151,9 @@ const ethiopianProperties = [
     amenities: ['WiFi', 'Security', 'Air Conditioning'],
     images: ['https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=800&h=600&fit=crop'],
     isPremium: false,
-    tag: null,
+    tags: [],
     rating: 4.1,
-    reviews: 6,
+    reviews: [],
     views: 340
   }
 ];

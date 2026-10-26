@@ -1,19 +1,20 @@
 import { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router";
+import { Link, useNavigate, useLocation } from "react-router";
 import { motion, AnimatePresence } from "motion/react";
 import { Home, Menu, X, CheckCircle, User } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import NotificationCenter from "../notifications/NotificationCenter";
 
+// Scroll links stay on homepage as hash routes; Contact is its own page
 const NAV_LINKS = [
-  { label: "Properties", id: "properties" },
-  { label: "Locations", id: "locations" },
-  { label: "How It Works", id: "how-it-works" },
-  { label: "About", id: "about" },
-  { label: "Contact", id: "contact" },
+  { label: "Properties",   hash: "properties",  href: "/#properties"  },
+  { label: "Locations",    hash: "locations",   href: "/#locations"   },
+  { label: "How It Works", hash: "how-it-works",href: "/#how-it-works"},
+  { label: "About",        hash: "about",       href: "/#about"       },
+  { label: "Contact",      hash: null,          href: "/contact"      },
 ];
 
-function scrollTo(id: string) {
+function smoothScrollTo(id: string) {
   const el = document.getElementById(id);
   if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
 }
@@ -22,21 +23,49 @@ export default function Navbar() {
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [authModal, setAuthModal] = useState<"list" | null>(null);
+  const [activeHash, setActiveHash] = useState("");
+
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 60);
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
-  
-  // Real authentication hooks
-  const { user, logout } = useAuth();
-  const navigate = useNavigate();
 
-  function handleNav(id: string) {
+  // Track which section is in view for active highlight
+  useEffect(() => {
+    if (location.pathname !== '/') { setActiveHash(""); return; }
+    const ids = NAV_LINKS.filter(l => l.hash).map(l => l.hash!);
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) setActiveHash(entry.target.id);
+        });
+      },
+      { threshold: 0.3 }
+    );
+    ids.forEach(id => { const el = document.getElementById(id); if (el) observer.observe(el); });
+    return () => observer.disconnect();
+  }, [location.pathname]);
+
+  function handleHashNav(hash: string) {
     setOpen(false);
-    setTimeout(() => scrollTo(id), 50);
+    if (location.pathname !== '/') {
+      // Navigate to home, then scroll after render
+      navigate('/');
+      setTimeout(() => smoothScrollTo(hash), 350);
+    } else {
+      smoothScrollTo(hash);
+    }
   }
+
+  const isActive = (link: typeof NAV_LINKS[0]) => {
+    if (link.href === "/contact") return location.pathname === "/contact";
+    return location.pathname === "/" && activeHash === link.hash;
+  };
 
   return (
     <>
@@ -48,7 +77,7 @@ export default function Navbar() {
         }`}>
         <div className="max-w-7xl mx-auto px-6 h-18 flex items-center justify-between py-4">
           {/* Logo */}
-          <Link to="/" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+          <Link to="/" onClick={() => { if (location.pathname === '/') window.scrollTo({ top: 0, behavior: "smooth" }); }}
             className="flex items-center gap-2.5 group">
             <div className="w-9 h-9 rounded-xl flex items-center justify-center relative overflow-hidden"
               style={{ background: "linear-gradient(135deg, #E8B84B 0%, #C9922A 100%)" }}>
@@ -62,12 +91,35 @@ export default function Navbar() {
 
           {/* Desktop nav */}
           <nav className="hidden md:flex items-center gap-8">
-            {NAV_LINKS.map(({ label, id }) => (
-              <button key={id} onClick={() => handleNav(id)}
-                className="text-sm font-medium text-white/70 hover:text-white transition-colors duration-200">
-                {label}
-              </button>
-            ))}
+            {NAV_LINKS.map((link) => {
+              const active = isActive(link);
+              if (link.hash) {
+                return (
+                  <button key={link.hash} onClick={() => handleHashNav(link.hash!)}
+                    className="relative text-sm font-medium transition-colors duration-200"
+                    style={{ color: active ? '#E8B84B' : 'rgba(255,255,255,0.7)' }}>
+                    {link.label}
+                    {active && (
+                      <motion.div layoutId="navUnderline"
+                        className="absolute -bottom-1 left-0 right-0 h-0.5 rounded-full"
+                        style={{ background: 'linear-gradient(90deg, #E8B84B, #C9922A)' }} />
+                    )}
+                  </button>
+                );
+              }
+              return (
+                <Link key={link.href} to={link.href}
+                  className="relative text-sm font-medium transition-colors duration-200"
+                  style={{ color: active ? '#E8B84B' : 'rgba(255,255,255,0.7)' }}>
+                  {link.label}
+                  {active && (
+                    <motion.div layoutId="navUnderline"
+                      className="absolute -bottom-1 left-0 right-0 h-0.5 rounded-full"
+                      style={{ background: 'linear-gradient(90deg, #E8B84B, #C9922A)' }} />
+                  )}
+                </Link>
+              );
+            })}
           </nav>
 
           {/* CTA */}
@@ -75,9 +127,11 @@ export default function Navbar() {
             {user ? (
               <>
                 <NotificationCenter />
-                <Link to={`/${user.role}`} className="text-sm font-medium text-white/80 hover:text-white transition-colors px-4 py-2">
-                  Dashboard
-                </Link>
+                {user.role !== 'renter' && (
+                  <Link to={`/${user.role}`} className="text-sm font-medium text-white/80 hover:text-white transition-colors px-4 py-2">
+                    Dashboard
+                  </Link>
+                )}
                 <Link to="/profile" className="w-9 h-9 rounded-xl bg-amber-500/20 flex items-center justify-center hover:bg-amber-500/30 transition-colors"
                   title={user.name}>
                   {user.profileImage
@@ -120,18 +174,33 @@ export default function Navbar() {
               transition={{ duration: 0.25, ease: "easeInOut" }}
               className="md:hidden overflow-hidden bg-[#070C17]/98 backdrop-blur-xl border-t border-white/10">
               <div className="px-6 py-5 flex flex-col gap-1">
-                {NAV_LINKS.map(({ label, id }) => (
-                  <button key={id} onClick={() => handleNav(id)}
-                    className="text-left text-white/80 hover:text-white hover:bg-white/6 font-medium py-3 px-3 rounded-xl transition-all">
-                    {label}
-                  </button>
-                ))}
+                {NAV_LINKS.map((link) => {
+                  const active = isActive(link);
+                  if (link.hash) {
+                    return (
+                      <button key={link.hash} onClick={() => handleHashNav(link.hash!)}
+                        className="text-left font-medium py-3 px-3 rounded-xl transition-all"
+                        style={{ color: active ? '#E8B84B' : 'rgba(255,255,255,0.8)', background: active ? 'rgba(232,184,75,0.08)' : 'transparent' }}>
+                        {link.label}
+                      </button>
+                    );
+                  }
+                  return (
+                    <Link key={link.href} to={link.href} onClick={() => setOpen(false)}
+                      className="text-left font-medium py-3 px-3 rounded-xl transition-all"
+                      style={{ color: active ? '#E8B84B' : 'rgba(255,255,255,0.8)', background: active ? 'rgba(232,184,75,0.08)' : 'transparent' }}>
+                      {link.label}
+                    </Link>
+                  );
+                })}
                 <div className="flex flex-col gap-3 pt-4 mt-2 border-t border-white/10">
                   {user ? (
                     <>
-                      <Link to={`/${user.role}`} onClick={() => setOpen(false)} className="text-white/80 hover:text-white font-medium py-2 text-left px-3 rounded-xl hover:bg-white/6 transition-all">
-                        Dashboard
-                      </Link>
+                      {user.role !== 'renter' && (
+                        <Link to={`/${user.role}`} onClick={() => setOpen(false)} className="text-white/80 hover:text-white font-medium py-2 text-left px-3 rounded-xl hover:bg-white/6 transition-all">
+                          Dashboard
+                        </Link>
+                      )}
                       <button onClick={() => { logout(); setOpen(false); }} className="text-red-400 font-medium py-2 text-left px-3 rounded-xl hover:bg-white/6 transition-all">
                         Logout
                       </button>

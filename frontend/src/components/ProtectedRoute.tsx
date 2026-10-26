@@ -29,7 +29,7 @@ export function ProtectedRoute({ allowedRoles }: ProtectedRouteProps) {
   // Wrong role for this route → redirect to their own dashboard
   if (allowedRoles && !allowedRoles.includes(user.role)) {
     if (user.role === 'admin') return <Navigate to="/admin" replace />;
-    if (user.role === 'owner') return <Navigate to="/owner" replace />;
+    if (user.role === 'owner' || user.role === 'renter') return <Navigate to="/owner" replace />;
     if (user.role === 'broker') {
       return user.isApproved
         ? <Navigate to="/broker" replace />

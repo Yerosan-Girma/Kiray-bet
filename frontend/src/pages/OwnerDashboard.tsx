@@ -39,7 +39,7 @@ function SubmitModal({ onClose }: { onClose: () => void }) {
     title: '', description: '', price: '', location: '',
     bedrooms: '', bathrooms: '', propertyType: 'apartment',
     amenities: [] as string[], contactPhone: user?.phone || '',
-    coordinates: { lat: '', lng: '' },
+    coordinates: { lat: '8.9939', lng: '38.7469' },
   });
   const [selectedBroker, setSelectedBroker] = useState<User | null>(null);
   const [loading, setLoading] = useState(false);
@@ -253,10 +253,10 @@ export default function OwnerDashboard() {
   const { data, isLoading } = useQuery({
     queryKey: ['ownerSubmissions'],
     queryFn: async () => {
-      // Owner sees properties where ownerId = self
+      const token = localStorage.getItem('nesthub_token') || sessionStorage.getItem('nesthub_token') || '';
       const response = await fetch(
-        `${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/houses?ownerId=${user?._id}`,
-        { headers: { Authorization: `Bearer ${localStorage.getItem('nesthub_token') || sessionStorage.getItem('nesthub_token') || ''}` } }
+        `${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/houses/my-owner-submissions`,
+        { headers: { Authorization: `Bearer ${token}` } }
       );
       const data = await response.json();
       return data;

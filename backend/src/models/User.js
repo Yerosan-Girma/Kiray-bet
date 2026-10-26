@@ -78,7 +78,7 @@ const userSchema = new mongoose.Schema(
     // Broker application fields
     brokerApplicationStatus: {
       type: String,
-      enum: ['none', 'pending', 'approved', 'rejected'],
+      enum: ['none', 'payment_pending', 'pending', 'approved', 'rejected'],
       default: 'none',
     },
     brokerApplicationNotes: { type: String, default: '' },

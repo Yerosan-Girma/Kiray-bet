@@ -1,10 +1,29 @@
 import { Home, Facebook, Twitter, Instagram, Youtube } from "lucide-react";
+import { Link } from "react-router";
 
 export default function Footer() {
   const cols = [
-    { title:"Explore",  links:["Properties","Map Search","Premium Listings","New Arrivals","Open Houses"] },
-    { title:"Company",  links:["About Us","How It Works","Careers","Press","Blog"] },
-    { title:"Support",  links:["Help Center","Contact Us","Report Issue","Terms","Privacy"] },
+    { title:"Explore",  links:[
+      { label:"Properties", href:"/properties" },
+      { label:"Map Search",  href:"/properties" },
+      { label:"Premium Listings", href:"/premium" },
+      { label:"New Arrivals", href:"/properties" },
+      { label:"Open Houses", href:"/properties" },
+    ]},
+    { title:"Company",  links:[
+      { label:"About Us", href:"/" },
+      { label:"How It Works", href:"/" },
+      { label:"Careers", href:"/" },
+      { label:"Press", href:"/" },
+      { label:"Blog", href:"/" },
+    ]},
+    { title:"Support",  links:[
+      { label:"Help Center", href:"/" },
+      { label:"Contact Us", href:"/contact" },
+      { label:"Report Issue", href:"/contact" },
+      { label:"Terms", href:"/" },
+      { label:"Privacy", href:"/" },
+    ]},
   ];
 
   return (
@@ -39,7 +58,7 @@ export default function Footer() {
               <h4 className="font-bold text-white text-sm mb-5" style={{ fontFamily: "Urbanist, sans-serif" }}>{col.title}</h4>
               <ul className="space-y-3">
                 {col.links.map(l => (
-                  <li key={l}><a href="#" className="text-sm text-white/40 hover:text-white transition-colors">{l}</a></li>
+                  <li key={l.label}><Link to={l.href} className="text-sm text-white/40 hover:text-white transition-colors">{l.label}</Link></li>
                 ))}
               </ul>
             </div>
