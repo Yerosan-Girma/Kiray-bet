@@ -3,6 +3,7 @@ import { motion } from 'motion/react';
 import { Link, useNavigate } from 'react-router';
 import { Mail, Lock, User, Check, X, Eye, EyeOff, UserPlus } from 'lucide-react';
 import { authService } from '../../services/auth.service';
+import GoogleLoginButton from '../../components/auth/GoogleLoginButton';
 import { toast } from 'sonner';
 import { useAuth } from '../../context/AuthContext';
 
@@ -279,6 +280,17 @@ export function SignupPage() {
               )}
             </button>
           </form>
+
+          <div className="relative my-6">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-200" />
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="px-4 bg-white text-gray-400 font-medium">Or continue with</span>
+            </div>
+          </div>
+
+          <GoogleLoginButton text="signup_with" />
 
           <div className="mt-8 text-center">
             <p className="text-gray-600">

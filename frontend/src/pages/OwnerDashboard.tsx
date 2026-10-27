@@ -11,6 +11,7 @@ import { useAuth } from '../context/AuthContext';
 import { toast } from 'sonner';
 import type { House, User } from '../types';
 import { Link } from 'react-router';
+import api from '../api/axios';
 
 const PROPERTY_TYPES = ['apartment', 'house', 'condo', 'studio', 'villa', 'townhouse'];
 const AMENITY_OPTIONS = ['WiFi', 'Parking', 'Pool', 'Gym', 'Garden', 'Security', 'Balcony', 'Air Conditioning'];
@@ -268,13 +269,8 @@ export default function OwnerDashboard() {
   const { data, isLoading } = useQuery({
     queryKey: ['ownerSubmissions'],
     queryFn: async () => {
-      const token = localStorage.getItem('nesthub_token') || sessionStorage.getItem('nesthub_token') || '';
-      const response = await fetch(
-        `${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/houses/my-owner-submissions`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      const data = await response.json();
-      return data;
+      const response = await api.get('/houses/my-owner-submissions');
+      return response.data;
     },
     staleTime: 30_000,
   });

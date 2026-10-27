@@ -5,6 +5,8 @@ import { Award, Heart, Star, MapPin, Bed, Bath, Square, Eye, Key } from "lucide-
 import { use3DTilt } from "../../hooks/use3DTilt";
 import { House } from "../../types";
 
+const BACKEND_BASE = (import.meta.env.VITE_API_URL || 'http://localhost:5000/api').replace(/\/api\/?$/, '');
+
 const HQ = (id: string, w = 800, h = 600) =>
   `https://images.unsplash.com/photo-${id}?w=${w}&h=${h}&fit=crop&auto=format&q=80`;
 
@@ -52,7 +54,7 @@ export default function PropertyCard({ house, index }: PropertyCardProps) {
             image.startsWith('http://') || image.startsWith('https://') || image.startsWith('data:') || image.startsWith('blob:')
               ? image
               : image.startsWith('/uploads')
-              ? `http://localhost:5000${image}`
+              ? `${BACKEND_BASE}${image}`
               : HQ(image)
           }
           alt={title}

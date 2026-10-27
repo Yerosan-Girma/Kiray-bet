@@ -32,7 +32,7 @@ router.post('/', contactLimiter, catchAsync(async (req, res) => {
     throw new AppError('Message must be under 2000 characters.', 400);
   }
 
-  const adminEmail = process.env.SMTP_USER;
+  const adminEmail = process.env.SMTP_USER || 'yerosang463@gmail.com';
 
   // Email to admin
   await sendEmail({

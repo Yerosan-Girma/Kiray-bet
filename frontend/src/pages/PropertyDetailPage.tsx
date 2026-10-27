@@ -19,9 +19,11 @@ const AMENITY_ICONS: Record<string, any> = {
   garden: Trees, security: Shield,
 };
 
+const BACKEND_BASE = (import.meta.env.VITE_API_URL || 'http://localhost:5000/api').replace(/\/api\/?$/, '');
+
 function formatImg(src?: string): string {
   if (!src) return '';
-  if (src.startsWith('/uploads')) return `http://localhost:5000${src}`;
+  if (src.startsWith('/uploads')) return `${BACKEND_BASE}${src}`;
   return src;
 }
 

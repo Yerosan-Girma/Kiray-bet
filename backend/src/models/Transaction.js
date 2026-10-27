@@ -25,6 +25,7 @@ const transactionSchema = new mongoose.Schema(
     receiptNumber: {
       type: String,
       unique: true,
+      sparse: true,
     },
     status: {
       type: String,
@@ -54,6 +55,5 @@ const transactionSchema = new mongoose.Schema(
 );
 
 transactionSchema.index({ userId: 1, status: 1 });
-
 
 module.exports = mongoose.model('Transaction', transactionSchema);

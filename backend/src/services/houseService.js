@@ -99,8 +99,8 @@ const getHouseById = async (houseId) => {
     .populate('ownerId', 'name email phone profileImage role');
   if (!house) throw new AppError('House not found', 404);
 
+  await House.updateOne({ _id: houseId }, { $inc: { views: 1 } });
   house.views += 1;
-  await house.save();
 
   return house;
 };
@@ -295,15 +295,16 @@ const getHouses = async (filters = {}, page = 1, limit = 10) => {
   else sort = { createdAt: -1 };
 
   const skip = (page - 1) * limit;
-  const houses = await House.find(query)
-    .populate('listedBy', 'name email phone profileImage role isApproved brokerCompanyName')
-    .populate('brokerId', 'name email phone profileImage role isApproved brokerCompanyName')
-    .sort(sort)
-    .skip(skip)
-    .limit(limit)
-    .lean();
-
-  const total = await House.countDocuments(query);
+  const [houses, total] = await Promise.all([
+    House.find(query)
+      .populate('listedBy', 'name email phone profileImage role isApproved brokerCompanyName')
+      .populate('brokerId', 'name email phone profileImage role isApproved brokerCompanyName')
+      .sort(sort)
+      .skip(skip)
+      .limit(limit)
+      .lean(),
+    House.countDocuments(query),
+  ]);
 
   return {
     houses,
@@ -329,14 +330,15 @@ const getNearbyHouses = async (longitude, latitude, radius = 10, page = 1, limit
   };
 
   const skip = (page - 1) * limit;
-  const houses = await House.find(query)
-    .populate('listedBy', 'name email phone profileImage role isApproved brokerCompanyName')
-    .populate('brokerId', 'name email phone profileImage role isApproved brokerCompanyName')
-    .skip(skip)
-    .limit(limit)
-    .lean();
-
-  const total = await House.countDocuments(query);
+  const [houses, total] = await Promise.all([
+    House.find(query)
+      .populate('listedBy', 'name email phone profileImage role isApproved brokerCompanyName')
+      .populate('brokerId', 'name email phone profileImage role isApproved brokerCompanyName')
+      .skip(skip)
+      .limit(limit)
+      .lean(),
+    House.countDocuments(query),
+  ]);
 
   return {
     houses,

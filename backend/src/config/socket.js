@@ -3,6 +3,7 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const House = require('../models/House');
 const Inquiry = require('../models/Inquiry');
+const Message = require('../models/Message');
 const logger = require('../utils/logger');
 
 let io;
@@ -43,15 +44,16 @@ const initSocket = (server) => {
   });
 
   io.on('connection', (socket) => {
-    if (socket.user) {
-      logger.info(`User ${socket.user.email} connected`);
-      const socketUserId = socket.user.id;
-      onlineUsers.set(socketUserId, (onlineUsers.get(socketUserId) || 0) + 1);
-      socket.join(`user_${socketUserId}`);
-      io.emit('user-online', { userId: socketUserId });
-    } else {
+    if (!socket.user) {
       logger.info('Anonymous visitor connected to socket for public updates');
+      return;
     }
+
+    logger.info(`User ${socket.user.email} connected`);
+    const socketUserId = socket.user.id;
+    onlineUsers.set(socketUserId, (onlineUsers.get(socketUserId) || 0) + 1);
+    socket.join(`user_${socketUserId}`);
+    io.emit('user-online', { userId: socketUserId });
 
     // Join a room based on inquiry ID
     socket.on('join-inquiry', (inquiryId) => {
@@ -163,11 +165,15 @@ const initSocket = (server) => {
       });
     });
 
-    // ── User personal room (for notifications) ─────────────────────────────
-    socket.join(`user_${socket.user.id}`);
-
     socket.on('disconnect', () => {
       logger.info(`User ${socket.user.email} disconnected`);
+      const remaining = (onlineUsers.get(socketUserId) || 1) - 1;
+      if (remaining > 0) {
+        onlineUsers.set(socketUserId, remaining);
+      } else {
+        onlineUsers.delete(socketUserId);
+        io.emit('user-offline', { userId: socketUserId });
+      }
     });
   });
 

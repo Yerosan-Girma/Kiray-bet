@@ -17,7 +17,7 @@ function ChatWindow({ inquiry, onClose }: { inquiry: Inquiry; onClose: () => voi
   const [typingUser, setTypingUser] = useState('');
   const [sending, setSending] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
-  const typingTimeout = useRef<ReturnType<typeof setTimeout>>();
+  const typingTimeout = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const queryClient = useQueryClient();
 
   useEffect(() => {

@@ -2,7 +2,12 @@ const User = require('../models/User');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const { AppError } = require('../utils/AppError');
-const { sendEmail } = require('../utils/email');
+const {
+  sendEmail,
+  getVerificationEmailTemplate,
+  getPasswordResetEmailTemplate,
+  getWelcomeEmailTemplate,
+} = require('./emailService');
 const logger = require('../utils/logger');
 
 const generateAccessToken = (user) => {
@@ -50,11 +55,12 @@ const register = async (userData) => {
 
   // Send verification email (async, we don't wait)
   try {
-    const verifyUrl = `${process.env.CLIENT_URL}/verify-email?token=${verificationToken}`;
+    const frontendUrl = process.env.FRONTEND_URL || process.env.CLIENT_URL || 'http://localhost:5173';
+    const verifyUrl = `${frontendUrl}/verify-email?token=${verificationToken}`;
     await sendEmail({
       to: user.email,
       subject: 'Verify Your Email',
-      html: `<p>Click <a href="${verifyUrl}">here</a> to verify your email.</p>`,
+      html: getVerificationEmailTemplate({ name: user.name, verifyUrl }),
     });
   } catch (err) {
     logger.error(`Email sending failed: ${err.message}`);
@@ -176,11 +182,12 @@ const forgotPassword = async (email) => {
   user.resetPasswordExpire = Date.now() + 10 * 60 * 1000; // 10 minutes
   await user.save({ validateBeforeSave: false });
 
-  const resetUrl = `${process.env.CLIENT_URL}/reset-password?token=${resetToken}`;
+  const frontendUrl = process.env.FRONTEND_URL || process.env.CLIENT_URL || 'http://localhost:5173';
+  const resetUrl = `${frontendUrl}/reset-password?token=${resetToken}`;
   await sendEmail({
     to: user.email,
     subject: 'Password Reset',
-    html: `<p>Click <a href="${resetUrl}">here</a> to reset your password. This link expires in 10 minutes.</p>`,
+    html: getPasswordResetEmailTemplate({ name: user.name, resetUrl }),
   });
 };
 
@@ -214,7 +221,130 @@ const changePassword = async (userId, oldPassword, newPassword) => {
   await user.save();
 };
 
+const verifyEmail = async (token) => {
+  if (!token) {
+    throw new AppError('Verification token is required', 400);
+  }
+
+  let decoded;
+  try {
+    decoded = jwt.verify(token, process.env.JWT_ACCESS_SECRET);
+  } catch (err) {
+    throw new AppError('Invalid or expired verification token', 400);
+  }
+
+  const user = await User.findById(decoded.id);
+  if (!user) {
+    throw new AppError('User not found', 404);
+  }
+
+  user.emailVerified = true;
+  await user.save({ validateBeforeSave: false });
+
+  // Send Welcome Email
+  try {
+    const frontendUrl = process.env.FRONTEND_URL || process.env.CLIENT_URL || 'http://localhost:5173';
+    await sendEmail({
+      to: user.email,
+      subject: 'Welcome to Kiray Bet! 🏠',
+      html: getWelcomeEmailTemplate({ name: user.name, role: user.role, siteUrl: frontendUrl }),
+    });
+  } catch (err) {
+    logger.warn(`Welcome email sending failed: ${err.message}`);
+  }
+
+  return user;
+};
+
+const googleLogin = async (idToken) => {
+  if (!idToken) {
+    throw new AppError('Google ID token is required', 400);
+  }
+
+  // Validate Google ID token via Google tokeninfo API
+  let googlePayload;
+  try {
+    const res = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(idToken)}`);
+    if (!res.ok) {
+      throw new Error('Google token verification failed');
+    }
+    googlePayload = await res.json();
+  } catch (err) {
+    throw new AppError('Invalid or expired Google token', 401);
+  }
+
+  const { sub: googleId, email, name, picture, email_verified, aud } = googlePayload;
+  if (!email) {
+    throw new AppError('No email associated with this Google account', 400);
+  }
+
+  // Security verification: ensure token was generated for our client ID
+  if (process.env.GOOGLE_CLIENT_ID && aud !== process.env.GOOGLE_CLIENT_ID) {
+    throw new AppError('Google token audience does not match this application', 401);
+  }
+
+  // Find user by googleId or email
+  let user = await User.findOne({
+    $or: [{ googleId }, { email: email.toLowerCase() }],
+  });
+
+  if (user) {
+    if (user.status === 'banned') {
+      throw new AppError('Your account has been banned. Please contact support.', 403);
+    }
+    if (user.status === 'suspended') {
+      if (user.suspensionExpiry && user.suspensionExpiry > new Date()) {
+        throw new AppError(`Your account is suspended until ${user.suspensionExpiry.toLocaleDateString()}. Reason: ${user.suspensionReason || 'Terms violation'}`, 403);
+      } else {
+        user.status = 'active';
+        user.suspensionReason = '';
+        user.suspensionExpiry = null;
+      }
+    }
+
+    // Link Google info
+    if (!user.googleId) user.googleId = googleId;
+    if (!user.emailVerified && (email_verified === 'true' || email_verified === true)) user.emailVerified = true;
+    if (!user.profileImage && picture) user.profileImage = picture;
+  } else {
+    // Auto-register new Google user as renter
+    user = new User({
+      name: name || email.split('@')[0],
+      email: email.toLowerCase(),
+      googleId,
+      profileImage: picture || '',
+      role: 'renter',
+      emailVerified: email_verified === 'true' || email_verified === true,
+      status: 'active',
+    });
+  }
+
+  const accessToken = generateAccessToken(user);
+  const refreshToken = generateRefreshToken(user);
+
+  user.refreshToken = refreshToken;
+  await user.save({ validateBeforeSave: false });
+
+  return {
+    user: {
+      _id: user._id,
+      id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      profileImage: user.profileImage,
+      isApproved: user.isApproved,
+      isPremium: user.isPremium,
+      status: user.status,
+    },
+    accessToken,
+    refreshToken,
+  };
+};
+
 module.exports = {
+  googleLogin,
+  verifyEmail,
   register,
   login,
   refreshAccessToken,

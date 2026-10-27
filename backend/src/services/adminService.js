@@ -12,41 +12,62 @@ const { sendEmail } = require('./emailService');
 const idOf = (value) => value?._id?.toString?.() || value?.toString?.();
 
 const getDashboardStats = async () => {
-  const totalUsers = await User.countDocuments();
-  const totalOwners = await User.countDocuments({ role: 'owner' });
-  const totalBrokers = await User.countDocuments({ role: 'broker' });
-  const totalRenters = await User.countDocuments({ role: 'renter' });
-  const totalListings = await House.countDocuments();
-  const premiumUsers = await User.countDocuments({ isPremium: true, premiumExpiry: { $gt: new Date() } });
-  const pendingListings = await House.countDocuments({ status: 'pending' });
-  const pendingUsers = await User.countDocuments({ isApproved: false, role: { $ne: 'admin' } });
-  const pendingBrokerApplications = await User.countDocuments({ brokerApplicationStatus: 'pending' });
-  const pendingOwnerSubmissions = await House.countDocuments({ brokerSubmissionStatus: 'pending_broker' });
-  const approvedListings = await House.countDocuments({ status: 'approved' });
-  const rejectedListings = await House.countDocuments({ status: 'rejected' });
-
-  const transactions = await Transaction.find({ status: 'success' });
-  const totalRevenue = transactions.reduce((sum, t) => sum + t.amount, 0);
-  const totalTransactions = await Transaction.countDocuments();
-
-  // Most viewed, favorited, contacted houses
-  const mostViewed = await House.find().sort({ views: -1 }).limit(5).select('title views');
-  const mostFavorited = await Favorite.aggregate([
-    { $group: { _id: '$houseId', count: { $sum: 1 } } },
-    { $sort: { count: -1 } },
-    { $limit: 5 },
-    { $lookup: { from: 'houses', localField: '_id', foreignField: '_id', as: 'house' } },
-    { $unwind: '$house' },
-    { $project: { 'house.title': 1, count: 1 } }
+  const [
+    totalUsers,
+    totalOwners,
+    totalBrokers,
+    totalRenters,
+    totalListings,
+    premiumUsers,
+    pendingListings,
+    pendingUsers,
+    pendingBrokerApplications,
+    pendingOwnerSubmissions,
+    approvedListings,
+    rejectedListings,
+    revenueAgg,
+    totalTransactions,
+    mostViewed,
+    mostFavorited,
+    mostContacted,
+  ] = await Promise.all([
+    User.countDocuments(),
+    User.countDocuments({ role: 'owner' }),
+    User.countDocuments({ role: 'broker' }),
+    User.countDocuments({ role: 'renter' }),
+    House.countDocuments(),
+    User.countDocuments({ isPremium: true, premiumExpiry: { $gt: new Date() } }),
+    House.countDocuments({ status: 'pending' }),
+    User.countDocuments({ isApproved: false, role: { $ne: 'admin' } }),
+    User.countDocuments({ brokerApplicationStatus: 'pending' }),
+    House.countDocuments({ brokerSubmissionStatus: 'pending_broker' }),
+    House.countDocuments({ status: 'approved' }),
+    House.countDocuments({ status: 'rejected' }),
+    Transaction.aggregate([
+      { $match: { status: 'success' } },
+      { $group: { _id: null, total: { $sum: '$amount' } } },
+    ]),
+    Transaction.countDocuments(),
+    House.find().sort({ views: -1 }).limit(5).select('title views').lean(),
+    Favorite.aggregate([
+      { $group: { _id: '$houseId', count: { $sum: 1 } } },
+      { $sort: { count: -1 } },
+      { $limit: 5 },
+      { $lookup: { from: 'houses', localField: '_id', foreignField: '_id', as: 'house' } },
+      { $unwind: '$house' },
+      { $project: { 'house.title': 1, count: 1 } },
+    ]),
+    Inquiry.aggregate([
+      { $group: { _id: '$houseId', count: { $sum: 1 } } },
+      { $sort: { count: -1 } },
+      { $limit: 5 },
+      { $lookup: { from: 'houses', localField: '_id', foreignField: '_id', as: 'house' } },
+      { $unwind: '$house' },
+      { $project: { 'house.title': 1, count: 1 } },
+    ]),
   ]);
-  const mostContacted = await Inquiry.aggregate([
-    { $group: { _id: '$houseId', count: { $sum: 1 } } },
-    { $sort: { count: -1 } },
-    { $limit: 5 },
-    { $lookup: { from: 'houses', localField: '_id', foreignField: '_id', as: 'house' } },
-    { $unwind: '$house' },
-    { $project: { 'house.title': 1, count: 1 } }
-  ]);
+
+  const totalRevenue = revenueAgg[0]?.total || 0;
 
   return {
     totalUsers,

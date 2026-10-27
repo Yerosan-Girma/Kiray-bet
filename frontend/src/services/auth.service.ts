@@ -40,4 +40,9 @@ export const authService = {
     const response = await api.post('/auth/verify-email', { token });
     return response.data;
   },
+
+  googleLogin: async (credential: string) => {
+    const response = await api.post('/auth/google', { credential });
+    return response.data;
+  },
 };

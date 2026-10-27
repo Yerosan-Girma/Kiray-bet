@@ -7,13 +7,23 @@ const handleCastErrorDB = (err) => {
 };
 
 const handleDuplicateFieldsDB = (err) => {
-  const value = err.errmsg.match(/(["'])(\\?.)*?\1/)[0];
+  let value = '';
+  if (err.keyValue) {
+    const keys = Object.keys(err.keyValue);
+    value = `${keys.join(', ')}: ${Object.values(err.keyValue).join(', ')}`;
+  } else if (err.message && err.message.match(/(["'])(\\?.)*?\1/)) {
+    value = err.message.match(/(["'])(\\?.)*?\1/)[0];
+  } else if (err.errmsg && err.errmsg.match(/(["'])(\\?.)*?\1/)) {
+    value = err.errmsg.match(/(["'])(\\?.)*?\1/)[0];
+  } else {
+    value = 'Duplicate value';
+  }
   const message = `Duplicate field value: ${value}. Please use another value.`;
   return new AppError(message, 400);
 };
 
 const handleValidationErrorDB = (err) => {
-  const errors = Object.values(err.errors).map((el) => el.message);
+  const errors = err.errors ? Object.values(err.errors).map((el) => el.message) : [err.message];
   const message = `Invalid input data. ${errors.join('. ')}`;
   return new AppError(message, 400);
 };
@@ -43,19 +53,22 @@ const sendErrorProd = (err, res) => {
 };
 
 const errorHandler = (err, req, res, next) => {
-  err.statusCode = err.statusCode || 500;
-  err.message = err.message || 'Internal Server Error';
+  let error = err;
+  error.statusCode = err.statusCode || 500;
+  error.message = err.message || 'Internal Server Error';
+
+  if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
+    error = new AppError('Invalid JSON format in request body', 400);
+  }
+  if (err.name === 'CastError') error = handleCastErrorDB(err);
+  if (err.code === 11000) error = handleDuplicateFieldsDB(err);
+  if (err.name === 'ValidationError') error = handleValidationErrorDB(err);
+  if (err.name === 'JsonWebTokenError') error = new AppError('Invalid token. Please log in again.', 401);
+  if (err.name === 'TokenExpiredError') error = new AppError('Your token has expired. Please log in again.', 401);
 
   if (process.env.NODE_ENV === 'development') {
-    sendErrorDev(err, res);
+    sendErrorDev(error, res);
   } else {
-    let error = { ...err };
-    error.message = err.message;
-
-    if (err.name === 'CastError') error = handleCastErrorDB(error);
-    if (err.code === 11000) error = handleDuplicateFieldsDB(error);
-    if (err.name === 'ValidationError') error = handleValidationErrorDB(error);
-
     sendErrorProd(error, res);
   }
 };

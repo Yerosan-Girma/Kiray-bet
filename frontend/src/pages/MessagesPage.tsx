@@ -22,7 +22,7 @@ function ChatWindow({ partnerId, onBack }: { partnerId: string; onBack: () => vo
   const [typingUser, setTypingUser] = useState('');
   const [sending, setSending] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
-  const typingTimeout = useRef<ReturnType<typeof setTimeout>>();
+  const typingTimeout = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   const convId = user ? getConversationId(user._id, partnerId) : '';
 

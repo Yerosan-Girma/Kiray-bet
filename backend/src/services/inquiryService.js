@@ -152,7 +152,7 @@ const addReply = async (inquiryId, userId, message) => {
   // Check if user is participant (renter or listedBy)
   const house = await House.findById(inquiry.houseId);
   const isRenter = inquiry.userId.toString() === userId;
-  const brokerId = idOf(inquiry.brokerId) || idOf(house.brokerId) || idOf(house.assignedBroker) || idOf(house.listedBy);
+  const brokerId = idOf(inquiry.brokerId) || idOf(house?.brokerId) || idOf(house?.assignedBroker) || idOf(house?.listedBy);
   const isBroker = brokerId === userId;
   if (!isRenter && !isBroker) {
     throw new AppError('Not authorized to reply', 403);
@@ -171,7 +171,7 @@ const addReply = async (inquiryId, userId, message) => {
   const notification = await Notification.create({
     userId: otherUserId,
     type: 'new_reply',
-    message: `New reply on inquiry for ${house.title}`,
+    message: `New reply on inquiry for ${house?.title || 'the property'}`,
     data: { inquiryId: inquiry._id, houseId: house._id },
   });
 
@@ -187,7 +187,7 @@ const addReply = async (inquiryId, userId, message) => {
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <h2 style="color: #C9922A;">New Reply to Your Inquiry</h2>
           <p>Hello ${otherUser.name},</p>
-          <p>You have received a new reply regarding your inquiry for <strong>${house.title}</strong>.</p>
+          <p>You have received a new reply regarding your inquiry for <strong>${house?.title || 'the property'}</strong>.</p>
           <p><strong>Reply from:</strong> ${currentUser.name}</p>
           <p><strong>Message:</strong></p>
           <p style="background: #f5f5f5; padding: 15px; border-radius: 5px;">${message}</p>

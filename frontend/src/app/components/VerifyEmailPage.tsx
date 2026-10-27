@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
-import { Link, useNavigate, useParams } from 'react-router';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router';
 import { Mail, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 import { authService } from '../../services/auth.service';
 import { toast } from 'sonner';
@@ -10,7 +10,9 @@ export function VerifyEmailPage() {
   const [verified, setVerified] = useState<boolean | null>(null);
   const [error, setError] = useState('');
   const navigate = useNavigate();
-  const { token } = useParams();
+  const { token: paramToken } = useParams();
+  const [searchParams] = useSearchParams();
+  const token = paramToken || searchParams.get('token');
 
   useEffect(() => {
     const verifyEmail = async () => {

@@ -29,4 +29,9 @@ router.put('/broker-applications/:id/approve', adminController.approveBroker);
 router.put('/broker-applications/:id/reject', adminController.rejectBroker);
 router.put('/broker-applications/:id/suspend', adminController.suspendBroker);
 
+// Moderation & Owner property overview
+router.get('/owner-properties', adminController.getOwnerProperties);
+router.get('/reported-conversations', adminController.getReportedConversations);
+router.put('/reported-conversations/:id/resolve', adminController.resolveReport);
+
 module.exports = router;
