@@ -5,8 +5,9 @@ import {
   Home, CheckCircle, XCircle, Clock, MessageSquare, Eye, EyeOff,
   Trash2, ArrowRight, Image as ImageIcon, Users, X,
   TrendingUp, Globe, Key, Edit2, AlertCircle, Search,
-  MapPin, Bed, Bath, Wifi, ChevronLeft, ChevronRight, FileText,
+  MapPin, Bed, Bath, Wifi, ChevronLeft, ChevronRight, FileText, Plus,
 } from 'lucide-react';
+import ImageUploader from '../components/property/ImageUploader';
 import { brokerService } from '../services/broker.service';
 import { houseService } from '../services/house.service';
 import { rentService } from '../services/rent.service';
@@ -367,6 +368,7 @@ function EditListingModal({ house, onClose }: { house: House; onClose: () => voi
       lat: String(house.coordinates?.coordinates?.[1] || ''),
       lng: String(house.coordinates?.coordinates?.[0] || ''),
     },
+    images: [...(house.images || [])],
   });
   const [publishing, setPublishing] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -384,6 +386,7 @@ function EditListingModal({ house, onClose }: { house: House; onClose: () => voi
     propertyType: form.propertyType,
     amenities: form.amenities,
     coordinates: { type: 'Point' as const, coordinates: [Number(form.coordinates.lng), Number(form.coordinates.lat)] as [number,number] },
+    images: form.images,
     ...(extraStatus ? { status: extraStatus, isActive: extraStatus === 'approved' ? true : undefined } : {}),
   });
 
@@ -485,6 +488,16 @@ function EditListingModal({ house, onClose }: { house: House; onClose: () => voi
             </div>
           </div>
 
+          {/* Photo Management */}
+          <div className="pt-2 border-t border-border">
+            <ImageUploader
+              images={form.images}
+              onChange={(imgs) => setForm((f) => ({ ...f, images: imgs }))}
+              label="Listing Photos"
+              description="Review and update photos for this property before publishing."
+            />
+          </div>
+
           <div>
             <label className="block text-xs font-semibold text-muted-foreground uppercase mb-2">Amenities</label>
             <div className="flex flex-wrap gap-2">
@@ -518,6 +531,238 @@ function EditListingModal({ house, onClose }: { house: House; onClose: () => voi
   );
 }
 
+// ── Broker Create Listing Modal ───────────────────────────────────────────
+function BrokerCreateListingModal({ onClose }: { onClose: () => void }) {
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const [form, setForm] = useState({
+    title: '',
+    description: '',
+    price: '',
+    location: '',
+    bedrooms: '2',
+    bathrooms: '2',
+    sqft: '',
+    propertyType: 'apartment',
+    amenities: [] as string[],
+    contactPhone: user?.phone || '',
+    coordinates: { lat: '8.9806', lng: '38.7578' },
+    images: [] as string[],
+    publishImmediately: true,
+  });
+  const [submitting, setSubmitting] = useState(false);
+
+  const toggleAmenity = (a: string) =>
+    setForm(f => ({
+      ...f,
+      amenities: f.amenities.includes(a) ? f.amenities.filter(x => x !== a) : [...f.amenities, a]
+    }));
+
+  const isFormValid =
+    form.title.trim() &&
+    form.description.trim() &&
+    form.price &&
+    Number(form.price) > 0 &&
+    form.location.trim() &&
+    form.bedrooms &&
+    form.bathrooms;
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!isFormValid) {
+      toast.error('Please fill in all required fields.');
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const payload = {
+        title: form.title.trim(),
+        description: form.description.trim(),
+        price: Number(form.price),
+        location: form.location.trim(),
+        propertyType: form.propertyType,
+        bedrooms: Number(form.bedrooms),
+        bathrooms: Number(form.bathrooms),
+        sqft: form.sqft ? Number(form.sqft) : undefined,
+        amenities: form.amenities,
+        contactPhone: form.contactPhone.trim() || user?.phone,
+        coordinates: {
+          type: 'Point' as const,
+          coordinates: [Number(form.coordinates.lng), Number(form.coordinates.lat)] as [number, number],
+        },
+        images: form.images,
+        status: form.publishImmediately ? 'approved' : 'pending',
+        isActive: form.publishImmediately ? true : false,
+        brokerSubmissionStatus: 'accepted',
+      };
+
+      await houseService.createHouse(payload);
+      toast.success(
+        form.publishImmediately
+          ? '🎉 Property listed and published live on Kiray Bet!'
+          : 'Listing saved as draft.'
+      );
+      queryClient.invalidateQueries({ queryKey: ['myListings'] });
+      queryClient.invalidateQueries({ queryKey: ['brokerSubmissions'] });
+      queryClient.invalidateQueries({ queryKey: ['houses'] });
+      onClose();
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'Failed to create listing');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60">
+      <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}
+        className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-3xl bg-white shadow-2xl">
+        <div className="flex items-center justify-between p-6 border-b border-border sticky top-0 bg-white z-10">
+          <div>
+            <h2 className="font-bold text-foreground text-xl">List a New Property</h2>
+            <p className="text-xs text-muted-foreground mt-0.5">As an approved broker, your listing goes live immediately</p>
+          </div>
+          <button onClick={onClose} className="p-2 hover:bg-muted rounded-xl transition-colors"><X className="w-5 h-5" /></button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="p-6 space-y-5">
+          <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-800 flex items-center gap-2">
+            <span>✨</span>
+            <span>You are listing directly as a verified broker. Upload photos and property details to publish live on Kiray Bet.</span>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="md:col-span-2">
+              <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1.5">Property Title *</label>
+              <input required value={form.title} onChange={e => setForm({...form, title: e.target.value})}
+                placeholder="e.g. Modern Luxury 3-Bedroom Apartment in Bole"
+                className="w-full px-4 py-3 border-2 border-border rounded-xl focus:outline-none focus:border-amber-500 text-sm" />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1.5">Monthly Rent (ETB) *</label>
+              <input required type="number" min="0" value={form.price} onChange={e => setForm({...form, price: e.target.value})}
+                placeholder="e.g. 45000"
+                className="w-full px-4 py-3 border-2 border-border rounded-xl focus:outline-none focus:border-amber-500 text-sm" />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1.5">Property Type *</label>
+              <select value={form.propertyType} onChange={e => setForm({...form, propertyType: e.target.value})}
+                className="w-full px-4 py-3 border-2 border-border rounded-xl focus:outline-none focus:border-amber-500 text-sm bg-background">
+                {PROPERTY_TYPES.map(t => <option key={t} value={t} className="capitalize">{t}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1.5">Bedrooms *</label>
+              <input required type="number" min="0" value={form.bedrooms} onChange={e => setForm({...form, bedrooms: e.target.value})}
+                className="w-full px-4 py-3 border-2 border-border rounded-xl focus:outline-none focus:border-amber-500 text-sm" />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1.5">Bathrooms *</label>
+              <input required type="number" min="0" value={form.bathrooms} onChange={e => setForm({...form, bathrooms: e.target.value})}
+                className="w-full px-4 py-3 border-2 border-border rounded-xl focus:outline-none focus:border-amber-500 text-sm" />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1.5">Square Meters / SqFt</label>
+              <input type="number" min="0" value={form.sqft} onChange={e => setForm({...form, sqft: e.target.value})}
+                placeholder="e.g. 180"
+                className="w-full px-4 py-3 border-2 border-border rounded-xl focus:outline-none focus:border-amber-500 text-sm" />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1.5">Contact Phone *</label>
+              <input required value={form.contactPhone} onChange={e => setForm({...form, contactPhone: e.target.value})}
+                placeholder="+251 911 234 567"
+                className="w-full px-4 py-3 border-2 border-border rounded-xl focus:outline-none focus:border-amber-500 text-sm" />
+            </div>
+            <div className="md:col-span-2">
+              <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1.5">Location / Neighborhood *</label>
+              <input required value={form.location} onChange={e => setForm({...form, location: e.target.value})}
+                placeholder="e.g. Bole, Addis Ababa"
+                className="w-full px-4 py-3 border-2 border-border rounded-xl focus:outline-none focus:border-amber-500 text-sm" />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1.5">Latitude</label>
+              <input type="number" step="any" value={form.coordinates.lat}
+                onChange={e => setForm({...form, coordinates: {...form.coordinates, lat: e.target.value}})}
+                placeholder="8.9806" className="w-full px-4 py-3 border-2 border-border rounded-xl focus:outline-none focus:border-amber-500 text-sm" />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1.5">Longitude</label>
+              <input type="number" step="any" value={form.coordinates.lng}
+                onChange={e => setForm({...form, coordinates: {...form.coordinates, lng: e.target.value}})}
+                placeholder="38.7578" className="w-full px-4 py-3 border-2 border-border rounded-xl focus:outline-none focus:border-amber-500 text-sm" />
+            </div>
+            <div className="md:col-span-2">
+              <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1.5">Description *</label>
+              <textarea required rows={4} value={form.description} onChange={e => setForm({...form, description: e.target.value})}
+                placeholder="Describe key features, floor, security, nearby landmarks..."
+                className="w-full px-4 py-3 border-2 border-border rounded-xl focus:outline-none focus:border-amber-500 text-sm resize-none" />
+            </div>
+          </div>
+
+          {/* Photo Uploader */}
+          <div className="pt-2 border-t border-border">
+            <ImageUploader
+              images={form.images}
+              onChange={(imgs) => setForm(f => ({ ...f, images: imgs }))}
+              label="Property Photos"
+              description="Upload authentic photos of this property (cover image first)."
+            />
+          </div>
+
+          {/* Amenities */}
+          <div>
+            <label className="block text-xs font-semibold text-muted-foreground uppercase mb-2">Amenities</label>
+            <div className="flex flex-wrap gap-2">
+              {AMENITY_OPTIONS.map(a => (
+                <button key={a} type="button" onClick={() => toggleAmenity(a)}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-semibold border-2 transition-all ${
+                    form.amenities.includes(a) ? 'border-amber-500 bg-amber-50 text-amber-700' : 'border-border text-muted-foreground hover:border-amber-300'
+                  }`}>{a}</button>
+              ))}
+            </div>
+          </div>
+
+          {/* Publishing toggle */}
+          <div className="p-4 rounded-2xl bg-muted/40 border border-border flex items-center justify-between">
+            <div>
+              <p className="text-sm font-bold text-foreground">Publish Live Immediately</p>
+              <p className="text-xs text-muted-foreground">Make this property searchable on the website right now</p>
+            </div>
+            <input
+              type="checkbox"
+              checked={form.publishImmediately}
+              onChange={e => setForm({...form, publishImmediately: e.target.checked})}
+              className="w-5 h-5 rounded accent-amber-500 cursor-pointer"
+            />
+          </div>
+
+          <div className="flex gap-3 pt-2 border-t border-border">
+            <button type="button" onClick={onClose}
+              className="flex-1 py-3.5 rounded-xl border-2 border-border font-semibold text-sm text-foreground hover:bg-muted transition-colors">
+              Cancel
+            </button>
+            <button type="submit" disabled={!isFormValid || submitting}
+              className="flex-1 py-3.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-50 transition-all hover:scale-[1.02] shadow-lg shadow-amber-500/20"
+              style={{ background: 'linear-gradient(135deg, #E8B84B, #C9922A)', color: '#070C17' }}>
+              {submitting ? (
+                <>
+                  <span className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                  Listing Property...
+                </>
+              ) : (
+                <>
+                  <Plus className="w-4 h-4" />
+                  {form.publishImmediately ? 'Publish to Kiray Bet' : 'Save as Draft'}
+                </>
+              )}
+            </button>
+          </div>
+        </form>
+      </motion.div>
+    </div>
+  );
+}
+
 // ── Main Broker Dashboard ──────────────────────────────────────────────────
 export default function BrokerDashboard() {
   const { user } = useAuth();
@@ -529,6 +774,7 @@ export default function BrokerDashboard() {
   const [rentalHouse, setRentalHouse] = useState<House | null>(null);
   const [rentalTenant, setRentalTenant] = useState<any | null>(null);
   const [showRentalForm, setShowRentalForm] = useState(false);
+  const [showCreateModal, setShowCreateModal] = useState(false);
 
   if (user?.role !== 'broker') return <Navigate to="/broker/pending" replace />;
 
@@ -626,10 +872,18 @@ export default function BrokerDashboard() {
               {user?.brokerCompanyName && <span className="ml-1 text-amber-600">· {user.brokerCompanyName}</span>}
             </p>
           </div>
-          <Link to="/messages"
-            className="flex items-center gap-2 px-5 py-2.5 rounded-xl border-2 border-border text-sm font-semibold text-foreground hover:border-amber-500 transition-colors">
-            <MessageSquare className="w-4 h-4" /> Messages
-          </Link>
+          <div className="flex items-center gap-3 flex-wrap">
+            <Link to="/messages"
+              className="flex items-center gap-2 px-5 py-2.5 rounded-xl border-2 border-border text-sm font-semibold text-foreground hover:border-amber-500 transition-colors">
+              <MessageSquare className="w-4 h-4" /> Messages
+            </Link>
+            <button
+              onClick={() => setShowCreateModal(true)}
+              className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm transition-all hover:scale-105 shadow-md shadow-amber-500/20"
+              style={{ background: 'linear-gradient(135deg, #E8B84B 0%, #C9922A 100%)', color: '#070C17' }}>
+              <Plus className="w-4 h-4" /> List New Property
+            </button>
+          </div>
         </div>
 
         {/* ── Stats grid ──────────────────────────────────────────── */}
@@ -878,14 +1132,22 @@ export default function BrokerDashboard() {
                   <h2 className="font-bold text-foreground">All Listings</h2>
                   <p className="text-xs text-muted-foreground mt-0.5">Manage, publish, hide or delete your property listings</p>
                 </div>
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <input
-                    value={listingSearch}
-                    onChange={e => setListingSearch(e.target.value)}
-                    placeholder="Search listings..."
-                    className="pl-9 pr-4 py-2 border-2 border-border rounded-xl text-sm focus:outline-none focus:border-amber-500 w-48"
-                  />
+                <div className="flex items-center gap-3 flex-wrap">
+                  <button
+                    onClick={() => setShowCreateModal(true)}
+                    className="flex items-center gap-1.5 px-4 py-2 rounded-xl font-bold text-xs shadow-md shadow-amber-500/20 transition-all hover:scale-105"
+                    style={{ background: 'linear-gradient(135deg, #E8B84B, #C9922A)', color: '#070C17' }}>
+                    <Plus className="w-3.5 h-3.5" /> + New Listing
+                  </button>
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <input
+                      value={listingSearch}
+                      onChange={e => setListingSearch(e.target.value)}
+                      placeholder="Search listings..."
+                      className="pl-9 pr-4 py-2 border-2 border-border rounded-xl text-sm focus:outline-none focus:border-amber-500 w-48"
+                    />
+                  </div>
                 </div>
               </div>
 
@@ -896,11 +1158,17 @@ export default function BrokerDashboard() {
                   <Home className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
                   <p className="font-bold text-foreground mb-2">No listings yet</p>
                   <p className="text-sm text-muted-foreground">Accept owner submissions from the Submissions tab, then publish them here</p>
-                  <button onClick={() => setTab('submissions')}
-                    className="mt-4 px-6 py-2.5 rounded-xl font-semibold text-sm inline-flex items-center gap-2"
-                    style={{ background: 'linear-gradient(135deg, #E8B84B, #C9922A)', color: '#070C17' }}>
-                    <Users className="w-4 h-4" /> Go to Submissions
-                  </button>
+                  <div className="mt-4 flex items-center justify-center gap-3 flex-wrap">
+                    <button onClick={() => setShowCreateModal(true)}
+                      className="px-6 py-2.5 rounded-xl font-semibold text-sm inline-flex items-center gap-2 shadow-md shadow-amber-500/20 transition-all hover:scale-105"
+                      style={{ background: 'linear-gradient(135deg, #E8B84B, #C9922A)', color: '#070C17' }}>
+                      <Plus className="w-4 h-4" /> List a Property Directly
+                    </button>
+                    <button onClick={() => setTab('submissions')}
+                      className="px-6 py-2.5 rounded-xl font-semibold text-sm inline-flex items-center gap-2 border border-border hover:bg-muted transition-colors">
+                      <Users className="w-4 h-4" /> View Submissions
+                    </button>
+                  </div>
                 </div>
               ) : (
                 <div className="overflow-x-auto">
@@ -1033,6 +1301,7 @@ export default function BrokerDashboard() {
 
       {/* Edit / Publish modal */}
       <AnimatePresence>
+        {showCreateModal && <BrokerCreateListingModal onClose={() => setShowCreateModal(false)} />}
         {editHouse && <EditListingModal house={editHouse} onClose={() => setEditHouse(null)} />}
         {viewHouse && (
           <PropertyDetailModal

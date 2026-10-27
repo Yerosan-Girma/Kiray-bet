@@ -11,6 +11,7 @@ router.get('/', houseController.getHouses);
 router.get('/nearby', houseController.getNearbyHouses);
 router.get('/my-listings', protect, houseController.getMyListings);
 router.get('/my-owner-submissions', protect, authorize('owner', 'renter'), houseController.getOwnerSubmissions);
+router.post('/upload-images', protect, upload.array('images', 10), houseController.uploadImages);
 router.get('/:id', houseController.getHouse);
 router.post(
   '/',

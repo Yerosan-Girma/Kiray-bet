@@ -6,6 +6,7 @@ import {
   Upload, X, ArrowRight, Users, Image as ImageIcon,
 } from 'lucide-react';
 import { brokerService } from '../services/broker.service';
+import ImageUploader from '../components/property/ImageUploader';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'sonner';
 import type { House, User } from '../types';
@@ -40,7 +41,8 @@ function SubmitModal({ onClose }: { onClose: () => void }) {
     title: '', description: '', price: '', location: '',
     bedrooms: '', bathrooms: '', propertyType: 'apartment',
     amenities: [] as string[], contactPhone: user?.phone || '',
-    coordinates: { lat: '8.9939', lng: '38.7469' },
+    coordinates: { lat: '8.9806', lng: '38.7578' },
+    images: [] as string[],
   });
   const [selectedBroker, setSelectedBroker] = useState<User | null>(null);
   const [loading, setLoading] = useState(false);
@@ -81,6 +83,7 @@ function SubmitModal({ onClose }: { onClose: () => void }) {
         propertyType: form.propertyType as any,
         amenities: form.amenities,
         contactPhone: form.contactPhone,
+        images: form.images,
       });
       toast.success('Property submitted to broker!');
       queryClient.invalidateQueries({ queryKey: ['ownerSubmissions'] });
@@ -150,24 +153,35 @@ function SubmitModal({ onClose }: { onClose: () => void }) {
                 <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1.5">Latitude *</label>
                 <input required type="number" step="any" value={form.coordinates.lat}
                   onChange={(e) => setForm({ ...form, coordinates: { ...form.coordinates, lat: e.target.value } })}
-                  placeholder="-1.2921" className="w-full px-4 py-3 border-2 border-border rounded-xl focus:outline-none focus:border-amber-500 text-sm" />
+                  placeholder="8.9806" className="w-full px-4 py-3 border-2 border-border rounded-xl focus:outline-none focus:border-amber-500 text-sm" />
               </div>
               <div>
                 <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1.5">Longitude *</label>
                 <input required type="number" step="any" value={form.coordinates.lng}
                   onChange={(e) => setForm({ ...form, coordinates: { ...form.coordinates, lng: e.target.value } })}
-                  placeholder="36.8219" className="w-full px-4 py-3 border-2 border-border rounded-xl focus:outline-none focus:border-amber-500 text-sm" />
+                  placeholder="38.7578" className="w-full px-4 py-3 border-2 border-border rounded-xl focus:outline-none focus:border-amber-500 text-sm" />
               </div>
-              <div>
+              <div className="md:col-span-2">
                 <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1.5">Contact Phone *</label>
                 <input required value={form.contactPhone} onChange={(e) => setForm({ ...form, contactPhone: e.target.value })}
-                  placeholder="+254 700 000 000" className="w-full px-4 py-3 border-2 border-border rounded-xl focus:outline-none focus:border-amber-500 text-sm" />
+                  placeholder="+251 911 234 567" className="w-full px-4 py-3 border-2 border-border rounded-xl focus:outline-none focus:border-amber-500 text-sm" />
               </div>
               <div className="md:col-span-2">
                 <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1.5">Description *</label>
                 <textarea required rows={4} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })}
+                  placeholder="Detailed description of the house, rooms, floor, views..."
                   className="w-full px-4 py-3 border-2 border-border rounded-xl focus:outline-none focus:border-amber-500 text-sm resize-none" />
               </div>
+            </div>
+
+            {/* Photo Upload Section */}
+            <div className="pt-2 border-t border-border">
+              <ImageUploader
+                images={form.images}
+                onChange={(imgs) => setForm((f) => ({ ...f, images: imgs }))}
+                label="Property Photos"
+                description="Upload photos of your home for the broker and prospective tenants to see."
+              />
             </div>
 
             <div>
@@ -277,7 +291,7 @@ export default function OwnerDashboard() {
     <div className="min-h-screen bg-background pt-20">
       <div className="max-w-7xl mx-auto px-6 py-8">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center justify-between mb-8 flex-wrap gap-4">
           <div>
             <h1 className="text-3xl font-black text-foreground" style={{ fontFamily: 'Urbanist, sans-serif' }}>
               Owner Dashboard

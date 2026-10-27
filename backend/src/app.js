@@ -1,3 +1,4 @@
+const path = require('path');
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
@@ -11,8 +12,9 @@ const logger = require('./utils/logger');
 const app = express();
 
 // Middleware
-app.use(helmet());
+app.use(helmet({ crossOriginResourcePolicy: false }));
 app.use(compression());
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 app.use(cors({
   origin: (origin, callback) => {
     // Allow requests with no origin (mobile apps, curl, etc.)

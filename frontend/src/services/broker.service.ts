@@ -39,6 +39,7 @@ export const brokerService = {
     propertyType: string;
     amenities: string[];
     contactPhone: string;
+    images?: string[];
   }) => {
     const response = await api.post('/broker/submit-property', data);
     return response.data;

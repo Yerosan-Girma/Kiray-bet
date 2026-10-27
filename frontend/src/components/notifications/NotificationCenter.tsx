@@ -105,7 +105,7 @@ export default function NotificationCenter() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 8, scale: 0.96 }}
             transition={{ duration: 0.18 }}
-            className="absolute right-0 top-12 w-80 rounded-2xl shadow-2xl overflow-hidden z-50"
+            className="fixed sm:absolute right-4 sm:right-0 top-16 sm:top-12 w-[calc(100vw-2rem)] sm:w-80 max-w-sm rounded-2xl shadow-2xl overflow-hidden z-50"
             style={{ background: '#0D1422', border: '1px solid rgba(255,255,255,0.1)' }}>
 
             {/* Header */}

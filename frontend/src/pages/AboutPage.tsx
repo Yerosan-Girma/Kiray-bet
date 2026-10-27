@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { motion } from 'motion/react';
 import { Link } from 'react-router';
 import {
@@ -53,6 +54,10 @@ const CITIES = [
 ];
 
 export default function AboutPage() {
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+  }, []);
+
   return (
     <div className="min-h-screen bg-background pt-20">
       {/* ── 1. Hero Section ────────────────────────────────────────────── */}

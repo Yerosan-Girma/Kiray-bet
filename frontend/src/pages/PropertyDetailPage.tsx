@@ -19,6 +19,12 @@ const AMENITY_ICONS: Record<string, any> = {
   garden: Trees, security: Shield,
 };
 
+function formatImg(src?: string): string {
+  if (!src) return '';
+  if (src.startsWith('/uploads')) return `http://localhost:5000${src}`;
+  return src;
+}
+
 function ImageGallery({ images, title }: { images: string[]; title: string }) {
   const [current, setCurrent] = useState(0);
   const [lightbox, setLightbox] = useState(false);
@@ -32,7 +38,7 @@ function ImageGallery({ images, title }: { images: string[]; title: string }) {
   return (
     <>
       <div className="relative rounded-3xl overflow-hidden aspect-[16/9] bg-gray-900 cursor-pointer" onClick={() => setLightbox(true)}>
-        <img src={images[current]} alt={title} className="w-full h-full object-cover" />
+        <img src={formatImg(images[current])} alt={title} className="w-full h-full object-cover" />
         <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
 
         {images.length > 1 && (
@@ -58,7 +64,7 @@ function ImageGallery({ images, title }: { images: string[]; title: string }) {
           {images.map((img, i) => (
             <button key={i} onClick={() => setCurrent(i)}
               className={`shrink-0 w-16 h-16 rounded-xl overflow-hidden border-2 transition-all ${i === current ? 'border-amber-500' : 'border-transparent opacity-60 hover:opacity-100'}`}>
-              <img src={img} alt="" className="w-full h-full object-cover" />
+              <img src={formatImg(img)} alt="" className="w-full h-full object-cover" />
             </button>
           ))}
         </div>
@@ -73,7 +79,7 @@ function ImageGallery({ images, title }: { images: string[]; title: string }) {
             <button className="absolute top-4 right-4 text-white/80 hover:text-white p-2">
               <X className="w-6 h-6" />
             </button>
-            <img src={images[current]} alt={title} className="max-h-[90vh] max-w-full object-contain rounded-2xl"
+            <img src={formatImg(images[current])} alt={title} className="max-h-[90vh] max-w-full object-contain rounded-2xl"
               onClick={(e) => e.stopPropagation()} />
             {images.length > 1 && (
               <>
@@ -125,7 +131,7 @@ function InquiryForm({ house }: { house: House }) {
           <label className="block text-sm font-medium text-foreground mb-1.5">Phone Number</label>
           <div className="relative">
             <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <input type="tel" required placeholder="+254 700 000 000"
+            <input type="tel" required placeholder="+251 911 234 567"
               value={form.contactPhone} onChange={(e) => setForm({ ...form, contactPhone: e.target.value })}
               className="w-full pl-10 pr-4 py-3 border-2 border-border rounded-xl focus:outline-none focus:border-amber-500 text-sm" />
           </div>

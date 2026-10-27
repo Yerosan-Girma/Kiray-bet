@@ -29,8 +29,8 @@ export default function Footer() {
   return (
     <footer style={{ background: "#04080F" }}>
       <div className="max-w-7xl mx-auto px-6 pt-16 pb-8">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-10 mb-14">
-          <div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8 md:gap-10 mb-14">
+          <div className="sm:col-span-2 md:col-span-1">
             <div className="flex items-center gap-3 mb-5">
               <div className="w-9 h-9 rounded-xl flex items-center justify-center shadow-lg shadow-amber-500/20"
                 style={{ background: "linear-gradient(135deg, #E8B84B, #C9922A)" }}>

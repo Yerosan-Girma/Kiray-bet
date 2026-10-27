@@ -32,6 +32,15 @@ export const houseService = {
     return response.data;
   },
 
+  uploadImages: async (files: File[]): Promise<string[]> => {
+    const formData = new FormData();
+    files.forEach((file) => formData.append('images', file));
+    const response = await api.post('/houses/upload-images', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return response.data.urls;
+  },
+
   deleteHouse: async (id: string) => {
     const response = await api.delete(`/houses/${id}`);
     return response.data;

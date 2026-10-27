@@ -72,41 +72,43 @@ export default function PropertiesPage() {
         </div>
 
         {/* Status / Availability tabs */}
-        <div className="flex items-center gap-2 mb-6 p-1.5 rounded-2xl bg-muted/60 max-w-fit border border-border">
-          <button
-            onClick={() => { setStatusTab('approved'); setPage(1); }}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
-              statusTab === 'approved'
-                ? 'bg-white shadow-sm text-foreground'
-                : 'text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            Available Properties
-          </button>
-          <button
-            onClick={() => { setStatusTab('rented'); setPage(1); }}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
-              statusTab === 'rented'
-                ? 'bg-purple-600 text-white shadow-sm'
-                : 'text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            Rented Properties
-          </button>
-          <button
-            onClick={() => { setStatusTab('all'); setPage(1); }}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
-              statusTab === 'all'
-                ? 'bg-white shadow-sm text-foreground'
-                : 'text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            All Listings
-          </button>
+        <div className="w-full overflow-x-auto no-scrollbar pb-1 mb-6">
+          <div className="inline-flex items-center gap-2 p-1.5 rounded-2xl bg-muted/60 border border-border whitespace-nowrap min-w-max">
+            <button
+              onClick={() => { setStatusTab('approved'); setPage(1); }}
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+                statusTab === 'approved'
+                  ? 'bg-white shadow-sm text-foreground'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              Available Properties
+            </button>
+            <button
+              onClick={() => { setStatusTab('rented'); setPage(1); }}
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+                statusTab === 'rented'
+                  ? 'bg-purple-600 text-white shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              Rented Properties
+            </button>
+            <button
+              onClick={() => { setStatusTab('all'); setPage(1); }}
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+                statusTab === 'all'
+                  ? 'bg-white shadow-sm text-foreground'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              All Listings
+            </button>
+          </div>
         </div>
 
         {/* Search + Filter bar */}
-        <div className="flex flex-col md:flex-row gap-3 mb-6">
+        <div className="flex flex-col sm:flex-row gap-3 mb-6">
           <div className="flex-1 relative">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <input
@@ -118,31 +120,33 @@ export default function PropertiesPage() {
             />
           </div>
 
-          <select value={filters.sort} onChange={(e) => updateFilter('sort', e.target.value)}
-            className="px-4 py-3 border-2 border-border rounded-xl focus:outline-none focus:border-amber-500 bg-background text-sm font-medium text-foreground">
-            {SORT_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-          </select>
+          <div className="flex items-center gap-2 sm:gap-3 flex-wrap sm:flex-nowrap">
+            <select value={filters.sort} onChange={(e) => updateFilter('sort', e.target.value)}
+              className="flex-1 sm:flex-initial px-4 py-3 border-2 border-border rounded-xl focus:outline-none focus:border-amber-500 bg-background text-sm font-medium text-foreground">
+              {SORT_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+            </select>
 
-          <button onClick={() => setShowFilters(!showFilters)}
-            className={`flex items-center gap-2 px-4 py-3 rounded-xl border-2 font-medium text-sm transition-colors ${
-              showFilters || hasActiveFilters ? 'border-amber-500 bg-amber-50 text-amber-700' : 'border-border text-foreground'
-            }`}>
-            <SlidersHorizontal className="w-4 h-4" />
-            Filters {hasActiveFilters && <span className="w-5 h-5 rounded-full bg-amber-500 text-white text-xs flex items-center justify-center">!</span>}
-          </button>
-
-          {hasActiveFilters && (
-            <button onClick={clearFilters}
-              className="flex items-center gap-2 px-4 py-3 rounded-xl border-2 border-red-200 text-red-500 text-sm font-medium hover:bg-red-50 transition-colors">
-              <X className="w-4 h-4" /> Clear
+            <button onClick={() => setShowFilters(!showFilters)}
+              className={`flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-3 rounded-xl border-2 font-medium text-sm transition-colors ${
+                showFilters || hasActiveFilters ? 'border-amber-500 bg-amber-50 text-amber-700' : 'border-border text-foreground'
+              }`}>
+              <SlidersHorizontal className="w-4 h-4" />
+              Filters {hasActiveFilters && <span className="w-5 h-5 rounded-full bg-amber-500 text-white text-xs flex items-center justify-center">!</span>}
             </button>
-          )}
+
+            {hasActiveFilters && (
+              <button onClick={clearFilters}
+                className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl border-2 border-red-200 text-red-500 text-sm font-medium hover:bg-red-50 transition-colors">
+                <X className="w-4 h-4" /> Clear
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Filter panel */}
         {showFilters && (
           <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
-            className="mb-6 p-6 rounded-2xl border-2 border-border bg-background grid grid-cols-2 md:grid-cols-4 gap-4">
+            className="mb-6 p-5 sm:p-6 rounded-2xl border-2 border-border bg-background grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
             <div>
               <label className="block text-xs font-semibold text-muted-foreground mb-1.5 uppercase tracking-wide">City</label>
               <input type="text" placeholder="e.g. Bole, Addis Ababa"

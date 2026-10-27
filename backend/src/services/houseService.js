@@ -73,9 +73,20 @@ const createHouse = async (houseData, userId) => {
     brokerId,
     assignedBroker: brokerId,
     uploadedBy: userId,
+    isActive: houseData.status === 'approved' ? true : (houseData.isActive !== undefined ? houseData.isActive : true),
     isPremium: houseData.isPremium || false,
-    brokerSubmissionStatus: houseData.brokerSubmissionStatus || 'none',
+    brokerSubmissionStatus: houseData.brokerSubmissionStatus || (user.role === 'broker' ? 'accepted' : 'none'),
   });
+
+  if (house.status === 'approved') {
+    const notif = await createNotification(
+      userId,
+      'listing_approved',
+      `Your property "${house.title}" has been published and is now live on the website.`,
+      { houseId: house._id }
+    );
+    emitToUser(userId, 'notification', notif);
+  }
 
   return house;
 };

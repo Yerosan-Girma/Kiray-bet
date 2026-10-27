@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router";
 import { motion } from "motion/react";
 import { ArrowRight } from "lucide-react";
 import PropertyCard from "./PropertyCard";
@@ -202,13 +203,14 @@ export default function FeaturedProperties() {
           viewport={{ once: true }}
           className="flex justify-center mt-12"
         >
-          <button
+          <Link
+            to="/properties"
             className="group flex items-center gap-3 px-8 py-4 rounded-2xl font-semibold border-2 text-foreground transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
             style={{ borderColor: "rgba(201,146,42,0.5)" }}
           >
             View All Properties
             <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
-          </button>
+          </Link>
         </motion.div>
       </div>
     </section>

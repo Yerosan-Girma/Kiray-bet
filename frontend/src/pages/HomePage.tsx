@@ -592,7 +592,7 @@ function HowItWorks() {
         </div>
 
         {/* Bottom mini cards — all three at a glance */}
-        <div className="grid grid-cols-3 gap-4 mt-6">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mt-6">
           {HOW_STEPS.map((s, i) => (
             <motion.button key={s.n} onClick={() => setActive(i)}
               whileHover={{ y: -3 }} whileTap={{ scale: 0.97 }}
@@ -642,7 +642,7 @@ function Statistics() {
   }, []);
 
   return (
-    <section id="about" ref={ref} className="py-24 relative overflow-hidden" style={{ background: "#070C17" }}>
+    <section id="stats" ref={ref} className="py-24 relative overflow-hidden" style={{ background: "#070C17" }}>
       {/* Background image with overlay */}
       <div className="absolute inset-0">
         <img src={HQ("1600596542815-ffad4c1539a9", 1920, 600)} alt="" className="w-full h-full object-cover opacity-15" />

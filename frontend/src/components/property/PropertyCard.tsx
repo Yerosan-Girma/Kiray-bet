@@ -47,7 +47,17 @@ export default function PropertyCard({ house, index }: PropertyCardProps) {
 
       {/* Image */}
       <div className="relative aspect-[4/3] overflow-hidden bg-muted">
-        <img src={image.includes('http') ? image : HQ(image)} alt={title} className={`w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 ${isRented ? 'grayscale-[20%]' : ''}`} />
+        <img
+          src={
+            image.startsWith('http://') || image.startsWith('https://') || image.startsWith('data:') || image.startsWith('blob:')
+              ? image
+              : image.startsWith('/uploads')
+              ? `http://localhost:5000${image}`
+              : HQ(image)
+          }
+          alt={title}
+          className={`w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 ${isRented ? 'grayscale-[20%]' : ''}`}
+        />
         {/* Gradient overlay */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
 

@@ -1,5 +1,5 @@
-import { lazy, Suspense } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router';
+import { lazy, Suspense, useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'sonner';
 import { AuthProvider } from '../context/AuthContext';
@@ -49,12 +49,32 @@ function PageLoader() {
   );
 }
 
+function ScrollToTop() {
+  const { pathname, hash } = useLocation();
+
+  useEffect(() => {
+    if (!hash) {
+      window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    } else {
+      const el = document.getElementById(hash.replace('#', ''));
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth' });
+      } else {
+        window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+      }
+    }
+  }, [pathname, hash]);
+
+  return null;
+}
+
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <SocketProvider>
           <Router>
+            <ScrollToTop />
             <div style={{ fontFamily: 'Outfit, Urbanist, sans-serif' }} className="bg-background text-foreground min-h-screen flex flex-col">
               <Navbar />
               <main className="flex-1">
