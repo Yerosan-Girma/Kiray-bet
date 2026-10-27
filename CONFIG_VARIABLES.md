@@ -19,18 +19,18 @@
 - `GOOGLE_CLIENT_ID=your_google_client_id.apps.googleusercontent.com` - Google OAuth client ID
 
 ### Frontend URLs
-- `CLIENT_URL=https://your-frontend.vercel.app` - Frontend deployment URL
-- `FRONTEND_URL=https://your-frontend.vercel.app` - Alternative frontend URL
+- `CLIENT_URL=https://kiray-bet-wine.vercel.app` - Frontend deployment URL
+- `FRONTEND_URL=https://kiray-bet-wine.vercel.app` - Alternative frontend URL
 
 ### Cloudinary (Media Storage)
-- `CLOUDINARY_CLOUD_NAME=your_cloud_name` - Cloudinary cloud name
-- `CLOUDINARY_API_KEY=your_api_key` - Cloudinary API key
+- `CLOUDINARY_CLOUD_NAME=dgedrvab` - Cloudinary cloud name
+- `CLOUDINARY_API_KEY=219498472674655` - Cloudinary API key
 - `CLOUDINARY_API_SECRET=your_api_secret` - Cloudinary API secret
 
 ### SMTP Email Configuration
 - `SMTP_HOST=smtp.gmail.com` - SMTP server host
 - `SMTP_PORT=587` - SMTP server port
-- `SMTP_USER=your_email@gmail.com` - SMTP username
+- `SMTP_USER=yerosang463@gmail.com` - SMTP username
 - `SMTP_PASS=your_app_password` - SMTP password/app password
 
 ### Payment Gateways (Optional)
@@ -46,10 +46,11 @@
 ## Frontend Environment Variables (.env)
 
 ### API Configuration
-- `VITE_API_URL=https://your-backend-api.onrender.com/api` - Backend API base URL
+- `VITE_API_URL=https://kiray-bet.onrender.com/api` - Backend API base URL
+- `VITE_SOCKET_URL=https://kiray-bet.onrender.com` - Backend Socket.IO URL
 
 ### Google Sign-In
-- `VITE_GOOGLE_CLIENT_ID=your_google_client_id.apps.googleusercontent.com` - Google OAuth client ID
+- `VITE_GOOGLE_CLIENT_ID=1031969964743-957uk5citodhlncu0ejci3fs0i0cv0p7.apps.googleusercontent.com` - Google OAuth client ID
 
 ---
 
