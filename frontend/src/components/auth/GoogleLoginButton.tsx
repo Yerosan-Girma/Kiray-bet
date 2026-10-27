@@ -19,7 +19,9 @@ export default function GoogleLoginButton({ text = 'continue_with' }: GoogleLogi
   const { login } = useAuth();
   const navigate = useNavigate();
 
-  const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
+  const clientId =
+    import.meta.env.VITE_GOOGLE_CLIENT_ID ||
+    '1031969964743-957uk5citodhlncu0ejci3fs0i0cv0p7.apps.googleusercontent.com';
 
   const handleCredentialResponse = async (response: any) => {
     try {

@@ -5,7 +5,7 @@ import { Award, Heart, Star, MapPin, Bed, Bath, Square, Eye, Key } from "lucide-
 import { use3DTilt } from "../../hooks/use3DTilt";
 import { House } from "../../types";
 
-const BACKEND_BASE = (import.meta.env.VITE_API_URL || 'http://localhost:5000/api').replace(/\/api\/?$/, '');
+const BACKEND_BASE = (import.meta.env.VITE_API_URL || (import.meta.env.PROD ? 'https://kiray-bet.onrender.com/api' : 'http://localhost:5000/api')).replace(/\/api\/?$/, '');
 
 const HQ = (id: string, w = 800, h = 600) =>
   `https://images.unsplash.com/photo-${id}?w=${w}&h=${h}&fit=crop&auto=format&q=80`;

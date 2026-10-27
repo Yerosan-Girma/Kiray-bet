@@ -11,7 +11,8 @@ interface SocketContextType {
 
 const SocketContext = createContext<SocketContextType>({ socket: null, connected: false });
 
-const SOCKET_URL = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000';
+const DEFAULT_BACKEND_URL = import.meta.env.PROD ? 'https://kiray-bet.onrender.com' : 'http://localhost:5000';
+const SOCKET_URL = import.meta.env.VITE_API_URL?.replace(/\/api\/?$/, '') || DEFAULT_BACKEND_URL;
 
 export function SocketProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
